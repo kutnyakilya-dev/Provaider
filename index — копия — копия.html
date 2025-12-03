@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="ru" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Telecom Tycoon: Post-Payment Update</title>
+    <!-- Подключение Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        /* Сброс и базовые стили */
+        html, body {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            overflow: hidden;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        
+        /* Стили навигации */
+        .nav-button.active {
+            background-color: #2563eb; /* blue-600 */
+            color: white;
+            box-shadow: 0 4px 6px -1px rgba(37, 99, 235, 0.5);
+        }
+        .nav-button.active:hover {
+            background-color: #3b82f6 !important; 
+            color: white !important;
+        }
+        
+        /* Кастомные ползунки */
+        input[type=range]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: #2563eb;
+            cursor: pointer;
+            box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.3);
+            margin-top: -6px;
+        }
+        input[type=range]::-webkit-slider-runnable-track {
+            height: 4px;
+            background: #e5e7eb;
+            border-radius: 2px;
+        }
+        
+        /* Скроллбар */
+        .custom-scroll::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scroll::-webkit-scrollbar-track {
+            background: #f8fafc;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 3px;
+        }
+        .custom-scroll::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Анимации */
+        .fade-in { animation: fadeIn 0.3s ease-in-out; }
+        .slide-in { animation: slideIn 0.3s ease-out; }
+        
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    </style>
+</head>
+<body class="h-full w-full bg-gray-100">
+
+    <!-- GAME CONTAINER -->
+    <div id="game-container" class="w-full h-full flex flex-col overflow-hidden bg-white">
+
+        <!-- MAIN CANVAS -->
+        <div id="game-canvas" class="flex-grow p-4 sm:p-6 overflow-hidden bg-gray-50 pb-20 relative flex flex-col">
+            <p class="text-gray-500 m-auto">Загрузка системы...</p>
+        </div>
+
+        <!-- NAVIGATION PANEL -->
+        <div id="navigation-panel" class="w-full h-16 bg-white border-t border-gray-200 flex items-center justify-between px-2 space-x-2 z-40 shrink-0">
+            <button id="market-button" onclick="changeScreen('market')" class="nav-button flex-1 py-1 bg-gray-50 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-100 transition duration-150 flex flex-col items-center justify-center h-12 text-xs sm:text-sm">
+                <span>Рынок</span>
+            </button>
+            <button id="company-button" onclick="changeScreen('company')" class="nav-button flex-1 py-1 bg-gray-50 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-100 transition duration-150 flex flex-col items-center justify-center h-12 text-xs sm:text-sm">
+                <span>Компания</span>
+            </button>
+            <button id="requests-button" onclick="changeScreen('requests')" class="nav-button flex-1 py-1 bg-gray-50 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-100 transition duration-150 flex flex-col items-center justify-center h-12 text-xs sm:text-sm relative">
+                <span>Заявки</span>
+                <!-- Badge for new requests -->
+                <span id="requests-badge" class="hidden absolute top-1 right-3 w-2.5 h-2.5 bg-red-500 rounded-full border border-white"></span>
+            </button>
+            <button id="settings-button" onclick="changeScreen('settings')" class="nav-button w-12 h-12 bg-gray-50 text-gray-700 font-semibold rounded-lg shadow-sm hover:bg-gray-100 transition duration-150 flex items-center justify-center">
+                 <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- MONEY DISPLAY -->
+    <div id="money-display" class="fixed top-4 right-4 p-2 pl-3 bg-gray-900/90 backdrop-blur rounded-full shadow-2xl z-50 flex items-center space-x-3 border border-gray-700 transition-all hover:scale-105 cursor-default">
+        <div class="bg-yellow-400 p-1 rounded-full">
+            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8v4m0 4v4m-6 3h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" />
+            </svg>
+        </div>
+        <span id="money-counter" class="text-sm sm:text-base font-bold tracking-wide text-white pr-2">-- грн</span>
+    </div>
+    
+    <!-- MODAL: PURCHASE -->
+    <div id="purchase-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white p-6 rounded-3xl shadow-2xl w-full max-w-sm transform transition-all scale-100 opacity-100">
+            <h2 class="text-xl font-bold text-gray-800 mb-1">Купить <span id="modal-resource-type">Ресурс</span></h2>
+            <p class="text-sm text-gray-500 mb-4">Провайдер: <span id="modal-provider-name" class="font-semibold text-blue-600">--</span></p>
+            
+            <div class="flex justify-between items-center mb-6 p-4 bg-gray-50 rounded-2xl border border-gray-100">
+                <div>
+                    <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Цена за ед.</p>
+                    <p class="text-lg font-bold text-gray-800"><span id="modal-unit-price">--</span> <span class="text-sm font-normal text-gray-500">грн</span></p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] uppercase text-gray-400 font-bold tracking-wider">Доступно</p>
+                    <p class="text-lg font-bold text-blue-600"><span id="modal-available">--</span></p>
+                </div>
+            </div>
+
+            <label class="block text-sm font-medium text-gray-700 mb-2">Количество (<span id="modal-unit-name-large">--</span>):</label>
+            <div class="flex rounded-xl shadow-sm mb-4">
+                <input type="number" id="purchase-amount" value="1" min="1" class="flex-grow focus:ring-blue-500 focus:border-blue-500 block w-full pl-4 text-lg border-gray-300 rounded-l-xl py-3" oninput="updateCostAndSlider(this.value)">
+                <span class="inline-flex items-center px-4 rounded-r-xl border border-l-0 border-gray-300 bg-gray-50 text-gray-500 font-medium">
+                    <span id="modal-unit-label"></span>
+                </span>
+            </div>
+
+            <div class="mb-6">
+                <input type="range" id="purchase-slider" min="1" max="1000" value="1" step="1" class="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateCostAndInput(this.value)">
+                <div class="flex justify-between text-xs text-gray-400 mt-2">
+                    <span>1</span>
+                    <span id="slider-max-label">Max</span>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-end border-t border-gray-100 pt-4">
+                <div class="flex-1 mr-4">
+                    <p class="text-xs text-gray-500">Итого к оплате:</p>
+                    <p id="modal-total-cost" class="text-xl sm:text-2xl font-bold text-gray-900 truncate">0.00 грн</p>
+                </div>
+                <div class="flex space-x-2 shrink-0">
+                    <button onclick="closeModal()" class="px-4 py-2 bg-gray-100 text-gray-600 font-semibold rounded-xl hover:bg-gray-200 transition">Отмена</button>
+                    <button id="confirm-purchase-btn" onclick="handlePurchase()" class="px-6 py-2 bg-black text-white font-semibold rounded-xl hover:bg-gray-800 transition disabled:opacity-50 disabled:cursor-not-allowed">Купить</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL: TARIFF CREATOR -->
+    <div id="tariff-creator-modal" class="hidden fixed inset-0 bg-gray-900/60 backdrop-blur-sm flex items-center justify-center z-[100] p-4">
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[95vh] overflow-hidden flex flex-col">
+            <!-- Header -->
+            <div class="p-4 sm:p-6 border-b border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+                <h2 id="tariff-modal-title" class="text-xl font-bold text-gray-800">Конструктор Тарифа</h2>
+                <button onclick="closeTariffModal()" class="text-gray-400 hover:text-gray-600">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                </button>
+            </div>
+            
+            <input type="hidden" id="edit-tariff-id" value="">
+
+            <!-- Scrollable Content -->
+            <div class="p-4 sm:p-6 overflow-y-auto modal-scroll space-y-6">
+                
+                <!-- Name -->
+                <div>
+                    <label class="block text-xs uppercase text-gray-500 font-bold tracking-wider mb-2">Название Тарифа</label>
+                    <input type="text" id="tariff-name" placeholder="Например: 'Супер Смарт'" class="w-full p-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:outline-none text-lg font-medium placeholder-gray-300">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <!-- Duration -->
+                    <div class="p-4 sm:p-5 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-3">Длительность (дней)</label>
+                        <div class="flex items-center space-x-3 mb-4">
+                            <input type="number" id="tariff-duration-input" value="7" min="1" max="365" class="w-24 text-center font-bold text-xl border-b-2 border-blue-500 focus:outline-none py-1" oninput="updateTariffDuration(this.value, false)">
+                            <span class="text-gray-500">дней</span>
+                        </div>
+                        <input type="range" id="tariff-duration-slider" min="1" max="365" value="7" class="w-full h-1.5 bg-gray-200 rounded-lg appearance-none cursor-pointer" oninput="updateTariffDuration(this.value, true)">
+                    </div>
+
+                    <!-- Speed Selector -->
+                    <div class="p-4 sm:p-5 bg-white border border-gray-200 rounded-2xl shadow-sm">
+                        <label class="block text-xs uppercase text-gray-400 font-bold mb-3">Скорость Интернета</label>
+                        <div class="relative">
+                            <select id="tariff-speed-select" onchange="updatePriceFeedbackUI()" class="block w-full pl-3 pr-10 py-3 text-base border-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 sm:text-sm rounded-xl bg-gray-50">
+                                <option value="2G">2G (GPRS/EDGE)</option>
+                                <option value="3G">3G (HSPA)</option>
+                                <option value="3G+">3G+ (HSPA+)</option>
+                                <option value="4G" selected>4G (LTE)</option>
+                                <option value="4G+">4G+ (LTE-A)</option>
+                                <option value="5G">5G</option>
+                                <option value="5G+">5G+ (mmWave)</option>
+                            </select>
+                            <div id="speed-availability-indicator" class="mt-2 text-xs font-semibold text-gray-400">
+                                Проверка лицензии...
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Resources Grid -->
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+                    <!-- Traffic -->
+                    <div class="p-4 sm:p-5 bg-green-50/50 border border-green-100 rounded-2xl relative overflow-hidden group">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                            <label class="block text-xs uppercase text-green-700 font-bold">Трафик</label>
+                        </div>
+                        <div class="flex items-baseline space-x-1 mb-3">
+                            <span id="display-tariff-traffic" class="text-3xl font-black text-green-900">0</span>
+                            <span class="text-sm font-medium text-green-600">ГБ</span>
+                        </div>
+                        <input type="range" id="tariff-traffic-slider" min="0" max="1001" value="0" class="w-full h-1.5 bg-green-200 rounded-lg appearance-none cursor-pointer mb-2" oninput="updateTariffResource('traffic', this.value)">
+                        <input type="number" id="tariff-traffic-input" value="0" class="w-full bg-transparent border-b border-green-300 text-sm py-1 focus:outline-none text-green-800" oninput="updateTariffResource('traffic', this.value, true)">
+                    </div>
+
+                    <!-- Minutes -->
+                    <div class="p-4 sm:p-5 bg-indigo-50/50 border border-indigo-100 rounded-2xl relative overflow-hidden group">
+                        <div class="flex items-center space-x-2 mb-1">
+                            <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                            <label class="block text-xs uppercase text-indigo-700 font-bold">Звонки</label>
+                        </div>
+                        <div class="flex items-baseline space-x-1 mb-3">
+                            <span id="display-tariff-minutes" class="text-3xl font-black text-indigo-900">0</span>
+                            <span class="text-sm font-medium text-indigo-600">мин.</span>
+                        </div>
+                        <input type="range" id="tariff-minutes-slider" min="0" max="1001" value="0" class="w-full h-1.5 bg-indigo-200 rounded-lg appearance-none cursor-pointer mb-2" oninput="updateTariffResource('minutes', this.value)">
+                        <input type="number" id="tariff-minutes-input" value="0" class="w-full bg-transparent border-b border-indigo-300 text-sm py-1 focus:outline-none text-indigo-800" oninput="updateTariffResource('minutes', this.value, true)">
+                    </div>
+                </div>
+
+                <!-- Price & Analytics -->
+                <div class="p-6 bg-gray-900 rounded-2xl text-white shadow-lg">
+                    <div class="flex justify-between items-start mb-6">
+                        <div class="flex-1">
+                            <label class="block text-xs uppercase text-gray-400 font-bold mb-2">Цена для клиента</label>
+                            <div class="flex items-center space-x-2">
+                                <input type="number" id="tariff-price-input" value="0" min="0" max="99999" class="bg-transparent text-4xl font-bold w-40 sm:w-48 border-b border-gray-600 focus:border-white focus:outline-none pb-1" oninput="updateTariffPrice(this.value)">
+                                <span class="text-xl text-gray-500 font-medium">грн</span>
+                            </div>
+                        </div>
+                        <div class="text-right pl-2">
+                            <p class="text-xs uppercase text-gray-400 font-bold mb-1">Спрос</p>
+                            <p id="tariff-profit-display" class="text-xl sm:text-2xl font-bold text-gray-500">Оценка...</p>
+                            <p id="price-status-text" class="text-xs text-gray-400 mt-1">Ожидание...</p>
+                        </div>
+                    </div>
+                    
+                    <input type="range" id="tariff-price-slider" min="0" max="99999" value="0" step="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="updateTariffPrice(this.value, true)">
+                    
+                    <!-- NEW: Net Income Display -->
+                    <div class="mt-6 pt-4 border-t border-gray-800 flex justify-between items-center">
+                         <span class="text-xs text-gray-400 font-bold uppercase">Чистая прибыль с абонента:</span>
+                         <span id="tariff-net-income" class="font-mono text-lg font-bold">0.00 грн</span>
+                    </div>
+                </div>
+
+            </div>
+
+            <!-- Footer Actions -->
+            <div class="p-4 sm:p-6 border-t border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
+                <div class="flex flex-col sm:flex-row gap-2">
+                    <button id="delete-tariff-btn" onclick="confirmDeleteTariff()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm px-2">Удалить</button>
+                    <!-- NEW: Pause Button -->
+                    <button id="pause-tariff-btn" onclick="toggleTariffPause()" class="hidden text-gray-500 hover:text-gray-800 font-medium text-sm px-2">Приостановить</button>
+                </div>
+                
+                <div class="flex space-x-3 sm:space-x-4 ml-auto">
+                    <button onclick="closeTariffModal()" class="px-4 sm:px-6 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition">Отмена</button>
+                    <button id="confirm-tariff-btn" onclick="handleCreateTariff()" class="px-6 sm:px-8 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 shadow-lg transform active:scale-95 transition">Создать</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODAL: DELETE CONFIRMATION -->
+    <div id="delete-confirm-modal" class="hidden fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full text-center">
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Удалить тариф?</h3>
+            <p class="text-sm text-gray-600 mb-6">Действие необратимо.</p>
+            <div class="flex justify-center space-x-4">
+                <button onclick="closeDeleteModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200">Отмена</button>
+                <button onclick="executeDeleteTariff()" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-md">Удалить</button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- MODAL: RESET PROGRESS CONFIRMATION -->
+    <div id="delete-progress-modal" class="hidden fixed inset-0 bg-gray-900/80 flex items-center justify-center z-[110] p-4">
+        <div class="bg-white p-6 rounded-2xl shadow-xl max-w-sm w-full text-center">
+            <div class="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+            </div>
+            <h3 class="text-lg font-bold text-gray-800 mb-2">Сбросить весь прогресс?</h3>
+            <p class="text-sm text-gray-600 mb-6">Вы потеряете все деньги, тарифы и абонентов. Это действие нельзя отменить.</p>
+            <div class="flex justify-center space-x-4">
+                <button onclick="closeResetModal()" class="px-4 py-2 bg-gray-100 text-gray-800 rounded-xl hover:bg-gray-200">Нет, отмена</button>
+                <button onclick="executeResetGame()" class="px-4 py-2 bg-red-600 text-white rounded-xl hover:bg-red-700 shadow-md">Да, сбросить</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONSTANTS & CONFIG ---
+        const PROVIDER_NAMES = [
+            "АстраНет", "МегаСеть", "ТрафикПлюс", "ГигаБайт", "ВостокТелеком",
+            "СкайЛинк", "ДатаСфера", "Форвард-IX", "Квантум", "УльтраВайр"
+        ];
+        
+        const MARKET_BASE_GB = 3.50;
+        const MARKET_BASE_MIN = 0.50;
+        const GAME_DAY_SECONDS = 15; // 1 игровой день = 15 секунд реального
+        
+        const SPEED_TYPES = [
+            { id: "2G", label: "2G", basePrice: 0.75 },
+            { id: "3G", label: "3G", basePrice: 2.00 },
+            { id: "3G+", label: "3G+", basePrice: 3.50 },
+            { id: "4G", label: "4G", basePrice: 6.00 },
+            { id: "4G+", label: "4G+", basePrice: 8.50 },
+            { id: "5G", label: "5G", basePrice: 12.00 },
+            { id: "5G+", label: "5G+", basePrice: 15.00 }
+        ];
+
+        const UPDATE_INTERVAL_MS = 180000; // 3 минуты
+
+        // --- GLOBAL STATE ---
+        let providers = [];
+        let speedOffers = []; 
+        let currentScreen = 'market'; 
+        let currentView = 'traffic'; 
+        
+        // Default player state
+        const DEFAULT_PLAYER_DATA = {
+            companyName: "Моя Компания",
+            balance: 1000.00,
+            trafficGB: 0,
+            minutes: 0,
+            tariffs: [], // { id, name, durationDays, trafficRaw, minutesRaw, price, speed, paused: bool }
+            speeds: {
+                "2G": 0, "3G": 0, "3G+": 0, "4G": 0, "4G+": 0, "5G": 0, "5G+": 0
+            },
+            requests: [],     // { id, name, phone, tariffId, expiresAt }
+            subscribers: []   // { id, name, phone, tariffSnapshot, startTime, endTime }
+        };
+
+        let playerData = JSON.parse(JSON.stringify(DEFAULT_PLAYER_DATA));
+
+        // --- LOCAL STORAGE ---
+        function saveGame() {
+            localStorage.setItem('telecomTycoonSave_v6', JSON.stringify(playerData));
+            console.log("Game Saved.");
+        }
+
+        function loadGame() {
+            const saved = localStorage.getItem('telecomTycoonSave_v6');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // Merge to ensure new fields (like requests) exist if loading old save
+                    playerData = { ...DEFAULT_PLAYER_DATA, ...parsed };
+                    
+                    // Fix nested objects merging
+                    if(parsed.speeds) playerData.speeds = parsed.speeds;
+                    if(parsed.tariffs) playerData.tariffs = parsed.tariffs;
+                    if(parsed.requests) playerData.requests = parsed.requests;
+                    if(parsed.subscribers) playerData.subscribers = parsed.subscribers;
+
+                    // Ensure 'paused' property exists on old saves
+                    playerData.tariffs.forEach(t => {
+                        if(typeof t.paused === 'undefined') t.paused = false;
+                    });
+
+                    console.log("Game Loaded.", playerData);
+                } catch (e) {
+                    console.error("Save file corrupted, starting fresh.", e);
+                }
+            }
+        }
+
+        function openResetModal() {
+            document.getElementById('delete-progress-modal').classList.remove('hidden');
+        }
+
+        function closeResetModal() {
+            document.getElementById('delete-progress-modal').classList.add('hidden');
+        }
+
+        function executeResetGame() {
+            localStorage.removeItem('telecomTycoonSave_v6');
+            location.reload();
+        }
+
+        // --- REQUEST SYSTEM LOGIC ---
+        
+        function generateRandomPhoneNumber() {
+            const prefixes = ["050", "066", "095", "099", "067", "068", "096", "097", "098", "063", "073", "093"];
+            const prefix = prefixes[getRandomInt(0, prefixes.length - 1)];
+            const number = getRandomInt(1000000, 9999999);
+            return `+38 (${prefix}) ${String(number).substring(0,3)}-${String(number).substring(3,5)}-${String(number).substring(5,7)}`;
+        }
+
+        function generateRandomName() {
+            const names = ["Алексей", "Дмитрий", "Ольга", "Мария", "Иван", "Сергей", "Анна", "Елена", "Максим", "Андрей", "Николай", "Татьяна"];
+            return names[getRandomInt(0, names.length - 1)];
+        }
+
+        function getPriceCategory(tariff) {
+            // Re-calculate cost basis
+            const calcTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw;
+            const calcMin = tariff.minutesRaw > 1000 ? 2000 : tariff.minutesRaw;
+            const resourceCost = (calcTraffic * MARKET_BASE_GB) + (calcMin * MARKET_BASE_MIN);
+            const speedInfo = SPEED_TYPES.find(s => s.id === tariff.speed);
+            const speedCost = (speedInfo ? speedInfo.basePrice : 0) * tariff.durationDays;
+            const totalCost = resourceCost + speedCost;
+            
+            const profit = tariff.price - totalCost;
+            
+            // Logic for categories
+            if (profit < 0) return { id: 'loss', label: 'Убыточная', chance: 0.8, profitVal: profit }; // 80% chance tick
+            if (profit < totalCost * 0.1) return { id: 'very_low', label: 'Очень низкая', chance: 0.5, profitVal: profit };
+            if (profit < totalCost * 0.3) return { id: 'low', label: 'Низкая', chance: 0.3, profitVal: profit };
+            if (profit < totalCost * 0.6) return { id: 'medium', label: 'Средняя', chance: 0.15, profitVal: profit };
+            if (profit < totalCost * 1.0) return { id: 'high', label: 'Высокая', chance: 0.05, profitVal: profit };
+            return { id: 'very_high', label: 'Очень высокая', chance: 0.01, profitVal: profit };
+        }
+
+        function gameLoop() {
+            // 1. Generate Requests
+            if (playerData.tariffs.length > 0) {
+                playerData.tariffs.forEach(tariff => {
+                    // SKIP PAUSED TARIFFS
+                    if (tariff.paused) return;
+
+                    // Check if player has resources for this tariff
+                    const reqTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw; 
+                    const reqMinutes = tariff.minutesRaw > 1000 ? 500 : tariff.minutesRaw;
+                    
+                    const hasTraffic = playerData.trafficGB >= reqTraffic;
+                    const hasMinutes = playerData.minutes >= reqMinutes;
+                    // FIX: Check if we have enough days of license for the tariff duration
+                    const hasLicense = playerData.speeds[tariff.speed] >= tariff.durationDays;
+
+                    if (hasTraffic && hasMinutes && hasLicense) {
+                        const cat = getPriceCategory(tariff);
+                        // Random chance based on category
+                        if (Math.random() < cat.chance) {
+                            // Spawn Request
+                            const req = {
+                                id: Date.now() + getRandomInt(0, 9999),
+                                name: generateRandomName(),
+                                phone: generateRandomPhoneNumber(),
+                                tariffId: tariff.id,
+                                tariffName: tariff.name,
+                                price: tariff.price,
+                                expiresAt: Date.now() + 30000 // Valid for 30 sec
+                            };
+                            // Limit max requests queue
+                            if (playerData.requests.length < 10) {
+                                playerData.requests.push(req);
+                                updateRequestsBadge();
+                                if(currentScreen === 'requests') renderRequestsScreen();
+                            }
+                        }
+                    }
+                });
+            }
+
+            // 2. Clean expired subscribers AND PAY MONEY
+            const now = Date.now();
+            let moneyEarned = 0;
+
+            // Find subscribers whose contract ended
+            const expiredSubs = playerData.subscribers.filter(sub => sub.endTime <= now);
+            
+            if (expiredSubs.length > 0) {
+                // Award money for finished contracts
+                expiredSubs.forEach(sub => {
+                    moneyEarned += sub.tariffPrice;
+                });
+                
+                playerData.balance += moneyEarned;
+                if (moneyEarned > 0) updateMoneyDisplay();
+
+                // Remove expired subs
+                playerData.subscribers = playerData.subscribers.filter(sub => sub.endTime > now);
+                
+                saveGame();
+                if(currentScreen === 'requests') renderRequestsScreen();
+            }
+
+            // 3. Update active bars if on screen - OPTIMIZED: No full render call here
+            if (currentScreen === 'requests') updateSubscriberProgress();
+        }
+
+        function acceptRequest(reqId) {
+            const reqIdx = playerData.requests.findIndex(r => r.id === reqId);
+            if (reqIdx === -1) return;
+            
+            const req = playerData.requests[reqIdx];
+            const tariff = playerData.tariffs.find(t => t.id === req.tariffId);
+
+            if (!tariff) {
+                // Tariff was deleted? Remove request
+                playerData.requests.splice(reqIdx, 1);
+                renderRequestsScreen();
+                return;
+            }
+
+            // Deduct Resources
+            const deductTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw; // Nominal deduction for unlimited
+            const deductMinutes = tariff.minutesRaw > 1000 ? 500 : tariff.minutesRaw;
+            const deductLicenseDays = tariff.durationDays;
+            const tech = tariff.speed;
+
+            if (playerData.trafficGB < deductTraffic || playerData.minutes < deductMinutes) {
+                alert("Недостаточно ресурсов для подключения абонента!");
+                return;
+            }
+            
+            // License Check
+            if (playerData.speeds[tech] < deductLicenseDays) {
+                alert(`Недостаточно дней лицензии ${tech}! Нужно: ${deductLicenseDays} дн.`);
+                return;
+            }
+
+            // Execute Transaction (Resources Only - Money is paid LATER)
+            playerData.trafficGB -= deductTraffic;
+            playerData.minutes -= deductMinutes;
+            playerData.speeds[tech] -= deductLicenseDays; // Deduct days
+            // playerData.balance += tariff.price; // <-- REMOVED: Immediate payment
+
+            // Create Subscriber (SNAPSHOT of tariff logic)
+            const durationMs = tariff.durationDays * GAME_DAY_SECONDS * 1000;
+            const newSub = {
+                id: req.id,
+                name: req.name,
+                phone: req.phone,
+                tariffName: tariff.name,
+                tariffPrice: tariff.price,
+                startTime: Date.now(),
+                endTime: Date.now() + durationMs,
+                totalDuration: durationMs
+            };
+
+            playerData.subscribers.push(newSub);
+            playerData.requests.splice(reqIdx, 1); // Remove request
+
+            saveGame();
+            renderRequestsScreen();
+            updateRequestsBadge();
+            // Update balance in header if visible
+            updateMoneyDisplay();
+        }
+
+        function rejectRequest(reqId) {
+            playerData.requests = playerData.requests.filter(r => r.id !== reqId);
+            updateRequestsBadge();
+            renderRequestsScreen();
+        }
+
+        function updateRequestsBadge() {
+            const badge = document.getElementById('requests-badge');
+            if (playerData.requests.length > 0) {
+                badge.classList.remove('hidden');
+            } else {
+                badge.classList.add('hidden');
+            }
+        }
+
+        // --- UTILS ---
+        
+        let activePurchase = {
+            type: null,
+            providerId: null,
+            speedId: null,
+            pricePerUnit: 0,
+            unitName: '',
+            available: 0
+        };
+
+        function getRandomInt(min, max) {
+            return Math.floor(Math.random() * (max - min + 1)) + min;
+        }
+
+        function getRandomFloat(min, max) {
+            return (Math.random() * (max - min) + min);
+        }
+
+        // --- INIT ---
+        function initGame() {
+            loadGame();
+            updateMarket();
+            updateMoneyDisplay();
+            startCountdown();
+            changeScreen('company'); 
+            
+            // Start Request Generator Loop
+            setInterval(gameLoop, 2000); // Check every 2 seconds
+            
+            // Autosave loop
+            setInterval(saveGame, 10000);
+
+            // Separate smooth loop for progress bars to avoid blinking
+            setInterval(updateSubscriberProgress, 200);
+
+            console.log("Telecom Tycoon initialized v0.9 (Delayed Payment)");
+        }
+
+        function updateMarket() {
+            providers = PROVIDER_NAMES.map((name, index) => {
+                const pricePerGB = (MARKET_BASE_GB + getRandomFloat(-0.5, 1.0)).toFixed(2);
+                const pricePerMin = (MARKET_BASE_MIN + getRandomFloat(-0.1, 0.2)).toFixed(2);
+                
+                return {
+                    id: index + 1,
+                    name: name,
+                    trafficGB: getRandomInt(500, 250000), 
+                    pricePerGB: parseFloat(pricePerGB),
+                    minutesAvailable: getRandomInt(1000, 500000), 
+                    pricePerMinute: parseFloat(pricePerMin),
+                };
+            });
+
+            speedOffers = PROVIDER_NAMES.map((name, index) => {
+                const tech = SPEED_TYPES[getRandomInt(0, SPEED_TYPES.length - 1)];
+                const variance = tech.basePrice * 0.2; 
+                const price = (tech.basePrice + getRandomFloat(-variance, variance)).toFixed(2);
+                
+                return {
+                    id: index + 100, 
+                    providerName: name,
+                    techId: tech.id,
+                    techLabel: tech.label,
+                    pricePerDay: parseFloat(price)
+                };
+            });
+
+            if (currentScreen === 'market') {
+                renderMarketTable(); 
+            }
+        }
+
+        // --- NAVIGATION ---
+        window.changeScreen = function(screen) {
+            if (currentScreen === screen) return;
+            currentScreen = screen;
+            
+            document.querySelectorAll('.nav-button').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`${screen}-button`).classList.add('active');
+
+            renderScreen();
+        }
+
+        function renderScreen() {
+            const compBtn = document.getElementById('company-button');
+            if(compBtn) {
+                 const span = compBtn.querySelector('span');
+                 if(span) span.textContent = playerData.companyName.substring(0, 10);
+            }
+
+            if (currentScreen === 'market') renderMarket(); 
+            else if (currentScreen === 'company') renderCompanyScreen(); 
+            else if (currentScreen === 'requests') renderRequestsScreen(); 
+            else if (currentScreen === 'settings') renderSettingsScreen();
+        }
+
+        // --- SCREEN: MARKET ---
+        window.changeView = function(view) {
+            currentView = view;
+            renderMarket();
+        }
+
+        function renderMarket() {
+            const canvas = document.getElementById('game-canvas');
+            
+            const tabs = [
+                { id: 'traffic', label: 'Трафик (ГБ)' },
+                { id: 'minutes', label: 'Минуты' },
+                { id: 'speed', label: 'Скорость' }
+            ];
+
+            const tabsHtml = tabs.map(t => `
+                <button onclick="changeView('${t.id}')" 
+                    class="px-4 py-2 text-sm font-medium rounded-lg transition-colors duration-200 shrink-0
+                    ${currentView === t.id ? 'bg-black text-white shadow-md' : 'bg-white text-gray-600 hover:bg-gray-100'}">
+                    ${t.label}
+                </button>
+            `).join('');
+
+            canvas.innerHTML = `
+                <div class="flex flex-col h-full fade-in w-full max-w-6xl mx-auto">
+                    <!-- Заголовок и Таймер -->
+                    <div class="flex justify-between items-center mb-4 shrink-0">
+                        <h1 class="text-xl sm:text-2xl font-bold text-gray-800">Биржа Ресурсов</h1>
+                        <div class="text-xs font-mono text-gray-400 bg-white px-3 py-1 rounded-full shadow-sm border flex items-center">
+                            Обновление: <span id="next-update-timer" class="text-blue-600 font-bold ml-1">--:--</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Табы -->
+                    <div class="flex space-x-2 mb-4 overflow-x-auto pb-2 shrink-0">
+                        ${tabsHtml}
+                    </div>
+
+                    <!-- Контейнер таблицы с прокруткой -->
+                    <div id="market-table-content" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex-grow relative flex flex-col">
+                        <!-- Table rendered via JS -->
+                    </div>
+                </div>
+            `;
+            
+            renderMarketTable();
+            updateTimerDisplay();
+        }
+
+        function renderMarketTable() {
+            const container = document.getElementById('market-table-content');
+            if (!container) return;
+
+            let html = `<div class="overflow-y-auto custom-scroll h-full w-full"><table class="w-full text-left border-collapse">`;
+            
+            if (currentView === 'speed') {
+                html += `
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
+                            <th class="p-3 sm:p-4">Провайдер</th>
+                            <th class="p-3 sm:p-4">Технология</th>
+                            <th class="p-3 sm:p-4">Цена / День</th>
+                            <th class="p-3 sm:p-4 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 text-sm">
+                `;
+                speedOffers.forEach(offer => {
+                    html += `
+                        <tr class="hover:bg-blue-50/50 transition">
+                            <td class="p-3 sm:p-4 font-medium text-gray-800">${offer.providerName}</td>
+                            <td class="p-3 sm:p-4">
+                                <span class="px-2 py-1 rounded bg-blue-100 text-blue-700 font-bold text-xs whitespace-nowrap">${offer.techLabel}</span>
+                            </td>
+                            <td class="p-3 sm:p-4 font-mono text-gray-600 whitespace-nowrap">${offer.pricePerDay.toFixed(2)} грн</td>
+                            <td class="p-3 sm:p-4 text-right">
+                                <button onclick="openPurchaseModal('speed', ${offer.id})" class="bg-black hover:bg-gray-800 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-bold shadow-md transition transform active:scale-95 whitespace-nowrap">
+                                    Купить Дни
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            } else {
+                const isTraffic = currentView === 'traffic';
+                const colAvailable = isTraffic ? 'Доступно (ГБ)' : 'Доступно (Мин)';
+                const colPrice = isTraffic ? 'Цена / ГБ' : 'Цена / Мин';
+                const keyAvailable = isTraffic ? 'trafficGB' : 'minutesAvailable';
+                const keyPrice = isTraffic ? 'pricePerGB' : 'pricePerMinute';
+                const unit = isTraffic ? 'ГБ' : 'мин.';
+
+                html += `
+                    <thead class="sticky top-0 z-10">
+                        <tr class="bg-gray-50 text-xs uppercase text-gray-500 font-bold border-b border-gray-100">
+                            <th class="p-3 sm:p-4">Провайдер</th>
+                            <th class="p-3 sm:p-4">${colAvailable}</th>
+                            <th class="p-3 sm:p-4">${colPrice}</th>
+                            <th class="p-3 sm:p-4 text-right">Действие</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-50 text-sm">
+                `;
+
+                providers.forEach(p => {
+                    html += `
+                        <tr class="hover:bg-blue-50/50 transition">
+                            <td class="p-3 sm:p-4 font-medium text-gray-800">${p.name}</td>
+                            <td class="p-3 sm:p-4 font-mono text-gray-500 whitespace-nowrap">${p[keyAvailable].toLocaleString()} ${unit}</td>
+                            <td class="p-3 sm:p-4 font-mono text-green-600 font-bold whitespace-nowrap">${p[keyPrice].toFixed(2)} грн</td>
+                            <td class="p-3 sm:p-4 text-right">
+                                <button onclick="openPurchaseModal('${currentView}', ${p.id})" class="bg-black hover:bg-gray-800 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-lg text-xs font-bold shadow-md transition transform active:scale-95 whitespace-nowrap">
+                                    Купить
+                                </button>
+                            </td>
+                        </tr>
+                    `;
+                });
+            }
+            
+            html += `</tbody></table></div>`;
+            container.innerHTML = html;
+        }
+
+        // --- SCREEN: COMPANY ---
+        function renderCompanyScreen() {
+            const canvas = document.getElementById('game-canvas');
+            
+            let tariffsHtml = playerData.tariffs.length === 0 
+                ? `<div class="p-8 text-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 mt-4">Нет активных тарифов</div>` 
+                : `<div class="space-y-3 mt-4">` + playerData.tariffs.map(t => {
+                    const isPaused = t.paused;
+                    return `
+                    <div onclick="openTariffEditor(${t.id})" class="group bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex justify-between items-center ${isPaused ? 'opacity-60 bg-gray-50' : ''}">
+                        <div>
+                            <div class="flex items-center space-x-2">
+                                <h3 class="font-bold text-gray-800">${t.name}</h3>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">${t.speed}</span>
+                                ${isPaused ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-600">PAUSED</span>' : ''}
+                            </div>
+                            <p class="text-xs text-gray-500 mt-1">
+                                ${t.trafficRaw > 1000 ? '∞ ГБ' : t.trafficRaw + ' ГБ'} • 
+                                ${t.minutesRaw > 1000 ? '∞ Мин' : t.minutesRaw + ' Мин'} • 
+                                ${t.durationDays} дн.
+                            </p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-lg font-bold text-green-600">${t.price.toLocaleString()} грн</p>
+                            <p class="text-[10px] text-gray-400 group-hover:text-blue-500 transition">Редактировать</p>
+                        </div>
+                    </div>
+                `}).join('') + `</div>`;
+
+            let speedsHtml = `<div class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-7 gap-2 mt-2">`;
+            for (const [tech, days] of Object.entries(playerData.speeds)) {
+                const isActive = days > 0;
+                speedsHtml += `
+                    <div class="p-2 rounded-lg border text-center ${isActive ? 'bg-blue-50 border-blue-200' : 'bg-gray-50 border-gray-100 opacity-60'}">
+                        <span class="font-bold text-xs block ${isActive ? 'text-blue-800' : 'text-gray-500'}">${tech}</span>
+                        <p class="text-[10px] text-gray-500 mt-1">${days} дн.</p>
+                    </div>
+                `;
+            }
+            speedsHtml += `</div>`;
+
+            canvas.innerHTML = `
+                <div class="fade-in h-full flex flex-col space-y-4 max-w-7xl mx-auto w-full">
+                    <div class="bg-white p-4 rounded-2xl border border-gray-100 shadow-sm flex justify-between items-center shrink-0">
+                        <div>
+                            <h1 class="text-2xl font-bold text-gray-900">${playerData.companyName}</h1>
+                            <p class="text-xs text-gray-500">Панель управления оператора</p>
+                        </div>
+                        <div class="text-right">
+                             <p class="text-xs uppercase text-gray-400 font-bold">Текущий Баланс</p>
+                             <p class="text-2xl font-black text-gray-800">${playerData.balance.toLocaleString('ru-RU')} <span class="text-sm font-normal text-gray-500">грн</span></p>
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 flex-grow overflow-hidden">
+                        <div class="lg:col-span-2 flex flex-col space-y-4 overflow-y-auto pr-2 custom-scroll">
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                                <div class="bg-green-50 p-5 rounded-2xl border border-green-100 shadow-sm">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-xs font-bold text-green-700 uppercase tracking-wider">Запас Трафика</span>
+                                        <svg class="w-6 h-6 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg>
+                                    </div>
+                                    <span class="text-3xl font-black text-green-900 leading-none">
+                                        ${playerData.trafficGB.toLocaleString()} 
+                                        <span class="text-lg font-medium">ГБ</span>
+                                    </span>
+                                    <div class="mt-4">
+                                        <button onclick="changeScreen('market'); setTimeout(() => changeView('traffic'), 100)" class="text-xs font-bold text-green-700 bg-green-200 px-3 py-1 rounded-full hover:bg-green-300 transition">Пополнить</button>
+                                    </div>
+                                </div>
+
+                                <div class="bg-indigo-50 p-5 rounded-2xl border border-indigo-100 shadow-sm">
+                                    <div class="flex justify-between items-start mb-2">
+                                        <span class="text-xs font-bold text-indigo-700 uppercase tracking-wider">Запас Минут</span>
+                                        <svg class="w-6 h-6 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path></svg>
+                                    </div>
+                                    <span class="text-3xl font-black text-indigo-900 leading-none">
+                                        ${playerData.minutes.toLocaleString()} 
+                                        <span class="text-lg font-medium">мин</span>
+                                    </span>
+                                    <div class="mt-4">
+                                        <button onclick="changeScreen('market'); setTimeout(() => changeView('minutes'), 100)" class="text-xs font-bold text-indigo-700 bg-indigo-200 px-3 py-1 rounded-full hover:bg-indigo-300 transition">Пополнить</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="bg-white p-5 rounded-2xl border border-gray-200 shadow-sm">
+                                <div class="flex justify-between items-center border-b border-gray-100 pb-2">
+                                    <h3 class="font-bold text-gray-800 flex items-center">
+                                        <svg class="w-5 h-5 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                                        Инфраструктура и Лицензии
+                                    </h3>
+                                    <button onclick="changeScreen('market'); setTimeout(() => changeView('speed'), 100)" class="text-xs text-blue-600 font-semibold hover:underline">Магазин лицензий →</button>
+                                </div>
+                                ${speedsHtml}
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-50 rounded-2xl border border-gray-200 shadow-sm flex flex-col overflow-hidden h-full">
+                            <div class="p-4 bg-white border-b border-gray-100 flex justify-between items-center shrink-0">
+                                <h2 class="font-bold text-gray-800">Управление Тарифами</h2>
+                                <button onclick="openTariffCreator()" class="bg-black text-white px-3 py-1.5 rounded-lg text-xs font-bold hover:bg-gray-800 transition shadow-md transform active:scale-95 flex items-center">
+                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path></svg>
+                                    Новый тариф
+                                </button>
+                            </div>
+                            
+                            <div class="overflow-y-auto p-4 flex-grow custom-scroll">
+                                ${tariffsHtml}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        // --- SCREEN: REQUESTS (NEW) ---
+        function renderRequestsScreen() {
+            const canvas = document.getElementById('game-canvas');
+            
+            // Generate Incoming Requests HTML
+            let incomingHtml = playerData.requests.length === 0 
+                ? `<div class="p-10 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
+                     <p>Нет новых заявок</p>
+                     <p class="text-xs mt-2">Ожидайте, пока клиенты узнают о тарифах...</p>
+                   </div>`
+                : playerData.requests.map(r => `
+                    <div class="bg-white p-4 rounded-xl border border-gray-200 shadow-sm mb-3 fade-in relative overflow-hidden">
+                        <div class="flex items-start justify-between mb-2">
+                            <div class="flex items-center space-x-3">
+                                <div class="bg-gray-100 p-2 rounded-full">
+                                    <svg class="w-6 h-6 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path></svg>
+                                </div>
+                                <div>
+                                    <p class="font-bold text-gray-800">${r.name}</p>
+                                    <p class="text-xs text-gray-500 font-mono">${r.phone}</p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mb-4">
+                            <p class="text-xs text-gray-500">Хочет подключить:</p>
+                            <div class="flex justify-between items-center mt-1">
+                                <span class="font-semibold text-blue-700">${r.tariffName}</span>
+                                <span class="font-bold text-green-600">+${r.price} грн</span>
+                            </div>
+                        </div>
+                        <div class="grid grid-cols-2 gap-2">
+                            <button onclick="rejectRequest(${r.id})" class="px-3 py-2 text-xs font-bold text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition">Отклонить</button>
+                            <button onclick="acceptRequest(${r.id})" class="px-3 py-2 text-xs font-bold text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition shadow-md">Принять</button>
+                        </div>
+                    </div>
+                `).join('');
+
+            // Generate Subscribers HTML
+            let subscribersHtml = playerData.subscribers.length === 0
+                ? `<div class="p-10 text-center text-gray-400 bg-white rounded-xl border border-gray-100">Список абонентов пуст</div>`
+                : playerData.subscribers.map(s => {
+                    const progress = ((Date.now() - s.startTime) / s.totalDuration) * 100;
+                    const remainingSec = Math.max(0, Math.ceil((s.endTime - Date.now()) / 1000));
+                    const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
+                    
+                    return `
+                    <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm mb-2 fade-in flex items-center justify-between">
+                        <div class="flex items-center space-x-3 flex-1 min-w-0">
+                             <div class="bg-green-100 p-1.5 rounded-full shrink-0">
+                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path></svg>
+                            </div>
+                            <div class="truncate">
+                                <p class="text-sm font-bold text-gray-800 truncate">${s.name}</p>
+                                <p class="text-xs text-gray-500">${s.tariffName}</p>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end w-24">
+                            <span id="sub-time-${s.id}" class="text-xs font-mono text-blue-600 font-bold mb-1">${remainingDays} дн.</span>
+                            <div class="w-full bg-gray-200 rounded-full h-1.5">
+                                <div id="sub-prog-${s.id}" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, progress)}%"></div>
+                            </div>
+                        </div>
+                    </div>
+                    `;
+                }).join('');
+
+            canvas.innerHTML = `
+                <div class="fade-in h-full max-w-6xl mx-auto w-full flex flex-col lg:flex-row gap-6">
+                    <!-- INCOMING COLUMN -->
+                    <div class="flex-1 flex flex-col overflow-hidden min-h-[300px]">
+                        <div class="mb-4 flex items-center justify-between shrink-0">
+                            <h2 class="text-xl font-bold text-gray-800">Входящие Заявки</h2>
+                            <span class="bg-red-100 text-red-600 px-2 py-0.5 rounded-full text-xs font-bold">${playerData.requests.length}</span>
+                        </div>
+                        <div class="overflow-y-auto custom-scroll pr-2 flex-grow bg-gray-50/50 rounded-2xl p-1">
+                            ${incomingHtml}
+                        </div>
+                    </div>
+
+                    <!-- ACTIVE SUBSCRIBERS COLUMN -->
+                    <div class="flex-1 flex flex-col overflow-hidden min-h-[300px]">
+                        <div class="mb-4 flex items-center justify-between shrink-0">
+                            <h2 class="text-xl font-bold text-gray-800">Активные Абоненты</h2>
+                            <span class="bg-green-100 text-green-600 px-2 py-0.5 rounded-full text-xs font-bold">${playerData.subscribers.length}</span>
+                        </div>
+                        <div class="overflow-y-auto custom-scroll pr-2 flex-grow bg-gray-50/50 rounded-2xl p-1">
+                            ${subscribersHtml}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+        
+        // --- NEW OPTIMIZED PROGRESS UPDATE (PREVENTS BLINKING) ---
+        function updateSubscriberProgress() {
+            if(currentScreen !== 'requests') return;
+
+            const now = Date.now();
+            playerData.subscribers.forEach(s => {
+                 const progress = ((now - s.startTime) / s.totalDuration) * 100;
+                 const remainingSec = Math.max(0, Math.ceil((s.endTime - now) / 1000));
+                 const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
+                 
+                 const progEl = document.getElementById(`sub-prog-${s.id}`);
+                 const timeEl = document.getElementById(`sub-time-${s.id}`);
+                 
+                 if(progEl) progEl.style.width = `${Math.min(100, progress)}%`;
+                 if(timeEl) timeEl.textContent = `${remainingDays} дн.`;
+            });
+        }
+
+        // --- SCREEN: SETTINGS ---
+        window.updateCompanyName = function(value) {
+            playerData.companyName = value || 'Company';
+            saveGame();
+        }
+
+        function renderSettingsScreen() {
+             const canvas = document.getElementById('game-canvas');
+             canvas.innerHTML = `
+                <div class="p-6 bg-white rounded-2xl shadow-sm border border-gray-200 max-w-lg mx-auto mt-10">
+                    <h2 class="text-2xl font-bold mb-4">Настройки</h2>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Название Компании</label>
+                    <input type="text" value="${playerData.companyName}" 
+                           class="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
+                           oninput="updateCompanyName(this.value)">
+                    
+                    <hr class="my-6 border-gray-100">
+                    
+                    <button onclick="saveGame(); alert('Сохранено!')" class="w-full mb-3 px-4 py-3 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition">
+                        Принудительное сохранение
+                    </button>
+
+                    <button onclick="openResetModal()" class="w-full px-4 py-3 bg-red-50 text-red-600 font-bold rounded-xl hover:bg-red-100 transition">
+                        Сброс прогресса (Удалить сохранение)
+                    </button>
+
+                    <p class="text-xs text-gray-400 mt-6 text-center">Версия игры: 0.9.1 (Delayed Payment)</p>
+                </div>
+             `;
+        }
+
+        // --- PURCHASE LOGIC ---
+        window.openPurchaseModal = function(type, itemId) {
+            activePurchase.type = type;
+            
+            let item;
+            if (type === 'speed') {
+                item = speedOffers.find(o => o.id === itemId);
+                if (!item) return;
+                
+                activePurchase.pricePerUnit = item.pricePerDay;
+                activePurchase.unitName = 'дней';
+                activePurchase.providerName = item.providerName;
+                activePurchase.techLabel = item.techLabel;
+                activePurchase.techId = item.techId;
+                activePurchase.available = 365; 
+                
+                document.getElementById('modal-resource-type').textContent = `Лицензия ${item.techLabel}`;
+                document.getElementById('modal-available').textContent = "365"; 
+                document.getElementById('modal-unit-name-large').textContent = 'Дней';
+                document.getElementById('modal-unit-label').textContent = 'Дней';
+            } else {
+                item = providers.find(p => p.id === itemId);
+                if (!item) return;
+                
+                const isTraffic = type === 'traffic';
+                activePurchase.providerName = item.name;
+                activePurchase.pricePerUnit = isTraffic ? item.pricePerGB : item.pricePerMinute;
+                activePurchase.unitName = isTraffic ? 'ГБ' : 'мин.';
+                activePurchase.available = isTraffic ? item.trafficGB : item.minutesAvailable;
+                activePurchase.providerId = item.id;
+                
+                document.getElementById('modal-resource-type').textContent = isTraffic ? 'Трафик' : 'Минуты';
+                document.getElementById('modal-available').textContent = activePurchase.available.toLocaleString();
+                document.getElementById('modal-unit-name-large').textContent = activePurchase.unitName;
+                document.getElementById('modal-unit-label').textContent = activePurchase.unitName;
+            }
+
+            document.getElementById('modal-provider-name').textContent = activePurchase.providerName;
+            document.getElementById('modal-unit-price').textContent = activePurchase.pricePerUnit.toFixed(2);
+            
+            document.getElementById('purchase-amount').value = 1;
+            document.getElementById('purchase-slider').value = 1;
+            
+            const maxLimit = activePurchase.available;
+            document.getElementById('purchase-slider').max = maxLimit;
+            document.getElementById('slider-max-label').textContent = maxLimit.toLocaleString();
+            
+            updateCost(1);
+            document.getElementById('purchase-modal').classList.remove('hidden');
+        }
+
+        window.closeModal = function() {
+            document.getElementById('purchase-modal').classList.add('hidden');
+        }
+
+        window.updateCostAndSlider = function(val) {
+            let v = parseInt(val) || 1;
+            if (v > activePurchase.available) v = activePurchase.available;
+            document.getElementById('purchase-slider').value = v;
+            updateCost(v);
+        }
+
+        window.updateCostAndInput = function(val) {
+            let v = parseInt(val) || 1;
+            document.getElementById('purchase-amount').value = v;
+            updateCost(v);
+        }
+
+        function updateCost(amount) {
+            const total = amount * activePurchase.pricePerUnit;
+            document.getElementById('modal-total-cost').textContent = total.toLocaleString('ru-RU', {minimumFractionDigits: 2}) + ' грн';
+            
+            const btn = document.getElementById('confirm-purchase-btn');
+            if (total > playerData.balance || amount < 1 || amount > activePurchase.available) {
+                btn.disabled = true;
+                btn.classList.add('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.remove('bg-black', 'hover:bg-gray-800');
+            } else {
+                btn.disabled = false;
+                btn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+                btn.classList.add('bg-black', 'hover:bg-gray-800');
+            }
+        }
+
+        window.handlePurchase = function() {
+            const amount = parseInt(document.getElementById('purchase-amount').value);
+            const totalCost = amount * activePurchase.pricePerUnit;
+
+            if (playerData.balance < totalCost) return;
+
+            playerData.balance -= totalCost;
+
+            if (activePurchase.type === 'traffic') {
+                playerData.trafficGB += amount;
+                const p = providers.find(x => x.id === activePurchase.providerId);
+                if(p) p.trafficGB -= amount;
+            } else if (activePurchase.type === 'minutes') {
+                playerData.minutes += amount;
+                const p = providers.find(x => x.id === activePurchase.providerId);
+                if(p) p.minutesAvailable -= amount;
+            } else if (activePurchase.type === 'speed') {
+                playerData.speeds[activePurchase.techId] += amount;
+            }
+
+            saveGame();
+            updateMoneyDisplay();
+            closeModal();
+            renderScreen(); 
+        }
+
+        // --- TARIFF CREATOR LOGIC ---
+        let tariffState = {
+            id: null,
+            traffic: 0,
+            minutes: 0,
+            price: 0,
+            duration: 7,
+            speed: '4G',
+            paused: false
+        };
+
+        window.openTariffCreator = function() {
+            resetTariffForm();
+            document.getElementById('tariff-creator-modal').classList.remove('hidden');
+        }
+
+        window.openTariffEditor = function(id) {
+            const t = playerData.tariffs.find(x => x.id === id);
+            if (!t) return;
+
+            resetTariffForm();
+            tariffState.paused = t.paused || false;
+            
+            document.getElementById('tariff-modal-title').textContent = "Редактировать Тариф";
+            document.getElementById('edit-tariff-id').value = t.id;
+            document.getElementById('confirm-tariff-btn').textContent = "Сохранить";
+            document.getElementById('delete-tariff-btn').classList.remove('hidden');
+            
+            // Setup Pause Button
+            const pauseBtn = document.getElementById('pause-tariff-btn');
+            pauseBtn.classList.remove('hidden');
+            if (t.paused) {
+                pauseBtn.textContent = "Возобновить";
+                pauseBtn.className = "text-green-600 hover:text-green-800 font-medium text-sm px-2";
+            } else {
+                pauseBtn.textContent = "Приостановить";
+                pauseBtn.className = "text-orange-500 hover:text-orange-700 font-medium text-sm px-2";
+            }
+
+            document.getElementById('tariff-name').value = t.name;
+            
+            updateTariffDuration(t.durationDays);
+            updateTariffResource('traffic', t.trafficRaw);
+            updateTariffResource('minutes', t.minutesRaw);
+            updateTariffPrice(t.price);
+            
+            const speedSelect = document.getElementById('tariff-speed-select');
+            speedSelect.value = t.speed;
+            
+            updatePriceFeedbackUI();
+            document.getElementById('tariff-creator-modal').classList.remove('hidden');
+        }
+
+        function resetTariffForm() {
+            document.getElementById('tariff-modal-title').textContent = "Новый Тариф";
+            document.getElementById('edit-tariff-id').value = "";
+            document.getElementById('confirm-tariff-btn').textContent = "Создать";
+            document.getElementById('delete-tariff-btn').classList.add('hidden');
+            document.getElementById('pause-tariff-btn').classList.add('hidden');
+            document.getElementById('tariff-name').value = "";
+            document.getElementById('tariff-speed-select').value = "4G";
+            tariffState.paused = false;
+            
+            updateTariffDuration(7);
+            updateTariffResource('traffic', 0);
+            updateTariffResource('minutes', 0);
+            updateTariffPrice(0);
+        }
+
+        window.closeTariffModal = function() {
+            document.getElementById('tariff-creator-modal').classList.add('hidden');
+        }
+        
+        window.toggleTariffPause = function() {
+            const id = document.getElementById('edit-tariff-id').value;
+            if(!id) return; // Cant pause new tariff before creation
+            
+            const t = playerData.tariffs.find(x => x.id == id);
+            if(t) {
+                t.paused = !t.paused;
+                saveGame();
+                closeTariffModal();
+                renderScreen();
+            }
+        }
+
+        window.updateTariffDuration = function(val, fromSlider = false) {
+            val = parseInt(val);
+            if (val > 365) val = 365;
+            if (val < 1) val = 1;
+            tariffState.duration = val;
+            document.getElementById('tariff-duration-input').value = val;
+            document.getElementById('tariff-duration-slider').value = val;
+            updatePriceFeedbackUI();
+        }
+
+        window.updateTariffResource = function(type, val, fromInput = false) {
+            let v = parseInt(val) || 0;
+            if (v < 0) v = 0;
+            
+            const isUnlimited = v > 1000;
+            const displayVal = isUnlimited ? "∞" : v;
+            
+            tariffState[type] = v;
+
+            document.getElementById(`tariff-${type}-slider`).value = v;
+            if (!fromInput) document.getElementById(`tariff-${type}-input`).value = v;
+            document.getElementById(`display-tariff-${type}`).textContent = displayVal;
+
+            updatePriceFeedbackUI();
+        }
+
+        window.updateTariffPrice = function(val, fromSlider = false) {
+            let v = parseInt(val) || 0;
+            if (v > 99999) v = 99999;
+            tariffState.price = v;
+            document.getElementById('tariff-price-input').value = v;
+            if(!fromSlider) document.getElementById('tariff-price-slider').value = v;
+            updatePriceFeedbackUI();
+        }
+
+        // Updated logic to use same calculation as request generator
+        window.updatePriceFeedbackUI = function() {
+            const tempTariff = {
+                trafficRaw: tariffState.traffic,
+                minutesRaw: tariffState.minutes,
+                price: tariffState.price,
+                durationDays: tariffState.duration,
+                speed: document.getElementById('tariff-speed-select').value
+            };
+            
+            const cat = getPriceCategory(tempTariff);
+            
+            // Check license
+            const speedDaysOwned = playerData.speeds[tempTariff.speed];
+            const speedIndicator = document.getElementById('speed-availability-indicator');
+            if (speedDaysOwned > 0) {
+                speedIndicator.textContent = `Доступно: ${speedDaysOwned} дн.`;
+                speedIndicator.className = "mt-2 text-xs font-bold text-green-600";
+            } else {
+                speedIndicator.textContent = `Нет лицензии на ${tempTariff.speed}!`;
+                speedIndicator.className = "mt-2 text-xs font-bold text-red-500";
+            }
+
+            const profitEl = document.getElementById('tariff-profit-display');
+            const statusEl = document.getElementById('price-status-text');
+            const netIncomeEl = document.getElementById('tariff-net-income');
+
+            profitEl.textContent = cat.label;
+            
+            // Color logic
+            let colorClass = "text-gray-500";
+            if(cat.id === 'loss') colorClass = "text-red-500";
+            else if(cat.id === 'very_low' || cat.id === 'low') colorClass = "text-green-600";
+            else if(cat.id === 'medium') colorClass = "text-blue-500";
+            else if(cat.id === 'high' || cat.id === 'very_high') colorClass = "text-orange-500";
+            
+            profitEl.className = `text-xl sm:text-2xl font-bold ${colorClass}`;
+            
+            if(cat.id === 'loss') statusEl.textContent = "Бешеный спрос (Убытки)";
+            else if(cat.id === 'very_low') statusEl.textContent = "Отличный спрос";
+            else if(cat.id === 'medium') statusEl.textContent = "Стабильный спрос";
+            else if(cat.id === 'very_high') statusEl.textContent = "Почти нет спроса";
+            else statusEl.textContent = "Умеренный спрос";
+            
+            // Show Net Income
+            const netProfit = cat.profitVal.toFixed(2);
+            netIncomeEl.textContent = `${netProfit} грн`;
+            if (cat.profitVal >= 0) {
+                netIncomeEl.className = "font-mono text-lg font-bold text-green-400";
+            } else {
+                netIncomeEl.className = "font-mono text-lg font-bold text-red-500";
+            }
+        }
+
+        window.handleCreateTariff = function() {
+            const name = document.getElementById('tariff-name').value.trim() || "Тариф #" + getRandomInt(100,999);
+            const id = document.getElementById('edit-tariff-id').value;
+            const speed = document.getElementById('tariff-speed-select').value;
+
+            const newTariff = {
+                id: id ? parseInt(id) : Date.now(),
+                name: name,
+                durationDays: tariffState.duration,
+                trafficRaw: tariffState.traffic,
+                minutesRaw: tariffState.minutes,
+                price: tariffState.price,
+                speed: speed,
+                paused: tariffState.paused
+            };
+
+            if (id) {
+                const idx = playerData.tariffs.findIndex(x => x.id == id);
+                if (idx !== -1) playerData.tariffs[idx] = newTariff;
+            } else {
+                playerData.tariffs.push(newTariff);
+            }
+
+            saveGame();
+            closeTariffModal();
+            renderScreen();
+        }
+
+        window.confirmDeleteTariff = function() {
+            document.getElementById('delete-confirm-modal').classList.remove('hidden');
+        }
+        window.closeDeleteModal = function() {
+            document.getElementById('delete-confirm-modal').classList.add('hidden');
+        }
+        window.executeDeleteTariff = function() {
+            const id = document.getElementById('edit-tariff-id').value;
+            playerData.tariffs = playerData.tariffs.filter(t => t.id != id);
+            saveGame();
+            closeDeleteModal();
+            closeTariffModal();
+            renderScreen();
+        }
+
+        function updateMoneyDisplay() {
+            document.getElementById('money-counter').textContent = playerData.balance.toLocaleString('ru-RU', {minimumFractionDigits: 2, maximumFractionDigits: 2}) + ' грн';
+        }
+
+        // --- TIMER ---
+        let globalTimeLeft = UPDATE_INTERVAL_MS;
+        
+        function startCountdown() {
+            setInterval(() => {
+                globalTimeLeft -= 1000;
+                if (globalTimeLeft <= 0) {
+                    updateMarket();
+                    globalTimeLeft = UPDATE_INTERVAL_MS;
+                }
+                updateTimerDisplay();
+            }, 1000);
+        }
+
+        function updateTimerDisplay() {
+            const el = document.getElementById('next-update-timer');
+            if(!el) return;
+            const m = Math.floor(globalTimeLeft / 60000);
+            const s = Math.floor((globalTimeLeft % 60000) / 1000).toString().padStart(2, '0');
+            el.textContent = `${m}:${s}`;
+        }
+
+        // START
+        window.onload = initGame;
+
+    </script>
+</body>
+</html>
