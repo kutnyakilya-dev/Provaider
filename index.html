@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telecom Tycoon: Clients & Storage Update</title>
+    <title>Telecom Tycoon: Post-Payment Update</title>
     <!-- Подключение Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -453,7 +453,8 @@
                     
                     const hasTraffic = playerData.trafficGB >= reqTraffic;
                     const hasMinutes = playerData.minutes >= reqMinutes;
-                    const hasLicense = playerData.speeds[tariff.speed] > 0;
+                    // FIX: Check if we have enough days of license for the tariff duration
+                    const hasLicense = playerData.speeds[tariff.speed] >= tariff.durationDays;
 
                     if (hasTraffic && hasMinutes && hasLicense) {
                         const cat = getPriceCategory(tariff);
@@ -480,13 +481,25 @@
                 });
             }
 
-            // 2. Clean expired subscribers
+            // 2. Clean expired subscribers AND PAY MONEY
             const now = Date.now();
-            const initialSubCount = playerData.subscribers.length;
-            playerData.subscribers = playerData.subscribers.filter(sub => sub.endTime > now);
+            let moneyEarned = 0;
+
+            // Find subscribers whose contract ended
+            const expiredSubs = playerData.subscribers.filter(sub => sub.endTime <= now);
             
-            // If someone expired, save
-            if (playerData.subscribers.length !== initialSubCount) {
+            if (expiredSubs.length > 0) {
+                // Award money for finished contracts
+                expiredSubs.forEach(sub => {
+                    moneyEarned += sub.tariffPrice;
+                });
+                
+                playerData.balance += moneyEarned;
+                if (moneyEarned > 0) updateMoneyDisplay();
+
+                // Remove expired subs
+                playerData.subscribers = playerData.subscribers.filter(sub => sub.endTime > now);
+                
                 saveGame();
                 if(currentScreen === 'requests') renderRequestsScreen();
             }
@@ -512,16 +525,25 @@
             // Deduct Resources
             const deductTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw; // Nominal deduction for unlimited
             const deductMinutes = tariff.minutesRaw > 1000 ? 500 : tariff.minutesRaw;
+            const deductLicenseDays = tariff.durationDays;
+            const tech = tariff.speed;
 
             if (playerData.trafficGB < deductTraffic || playerData.minutes < deductMinutes) {
                 alert("Недостаточно ресурсов для подключения абонента!");
                 return;
             }
+            
+            // License Check
+            if (playerData.speeds[tech] < deductLicenseDays) {
+                alert(`Недостаточно дней лицензии ${tech}! Нужно: ${deductLicenseDays} дн.`);
+                return;
+            }
 
-            // Execute Transaction
+            // Execute Transaction (Resources Only - Money is paid LATER)
             playerData.trafficGB -= deductTraffic;
             playerData.minutes -= deductMinutes;
-            playerData.balance += tariff.price;
+            playerData.speeds[tech] -= deductLicenseDays; // Deduct days
+            // playerData.balance += tariff.price; // <-- REMOVED: Immediate payment
 
             // Create Subscriber (SNAPSHOT of tariff logic)
             const durationMs = tariff.durationDays * GAME_DAY_SECONDS * 1000;
@@ -597,7 +619,7 @@
             // Separate smooth loop for progress bars to avoid blinking
             setInterval(updateSubscriberProgress, 200);
 
-            console.log("Telecom Tycoon initialized v0.8");
+            console.log("Telecom Tycoon initialized v0.9 (Delayed Payment)");
         }
 
         function updateMarket() {
@@ -939,7 +961,9 @@
                 ? `<div class="p-10 text-center text-gray-400 bg-white rounded-xl border border-gray-100">Список абонентов пуст</div>`
                 : playerData.subscribers.map(s => {
                     const progress = ((Date.now() - s.startTime) / s.totalDuration) * 100;
-                    const remaining = Math.max(0, Math.ceil((s.endTime - Date.now()) / 1000));
+                    const remainingSec = Math.max(0, Math.ceil((s.endTime - Date.now()) / 1000));
+                    const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
+                    
                     return `
                     <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm mb-2 fade-in flex items-center justify-between">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
@@ -952,7 +976,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col items-end w-24">
-                            <span id="sub-time-${s.id}" class="text-xs font-mono text-blue-600 font-bold mb-1">${remaining} сек</span>
+                            <span id="sub-time-${s.id}" class="text-xs font-mono text-blue-600 font-bold mb-1">${remainingDays} дн.</span>
                             <div class="w-full bg-gray-200 rounded-full h-1.5">
                                 <div id="sub-prog-${s.id}" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, progress)}%"></div>
                             </div>
@@ -995,13 +1019,14 @@
             const now = Date.now();
             playerData.subscribers.forEach(s => {
                  const progress = ((now - s.startTime) / s.totalDuration) * 100;
-                 const remaining = Math.max(0, Math.ceil((s.endTime - now) / 1000));
+                 const remainingSec = Math.max(0, Math.ceil((s.endTime - now) / 1000));
+                 const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
                  
                  const progEl = document.getElementById(`sub-prog-${s.id}`);
                  const timeEl = document.getElementById(`sub-time-${s.id}`);
                  
                  if(progEl) progEl.style.width = `${Math.min(100, progress)}%`;
-                 if(timeEl) timeEl.textContent = `${remaining} сек`;
+                 if(timeEl) timeEl.textContent = `${remainingDays} дн.`;
             });
         }
 
@@ -1031,7 +1056,7 @@
                         Сброс прогресса (Удалить сохранение)
                     </button>
 
-                    <p class="text-xs text-gray-400 mt-6 text-center">Версия игры: 0.8.0 (Pause & Profit Update)</p>
+                    <p class="text-xs text-gray-400 mt-6 text-center">Версия игры: 0.9.1 (Delayed Payment)</p>
                 </div>
              `;
         }
