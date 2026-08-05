@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Telecom Tycoon: Post-Payment Update</title>
+    <title>Telecom Tycoon: Clients, Storage & Automation</title>
     <!-- Подключение Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
@@ -71,7 +71,10 @@
         @keyframes slideIn { from { transform: translateY(10px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
     </style>
 </head>
-<body class="h-full w-full bg-gray-100">
+<body class="h-full w-full bg-gray-100" onclick="enableAudioOnFirstClick()">
+
+    <!-- AUDIO ELEMENT FOR BACKGROUND MUSIC -->
+    <audio id="bg-music" loop src="https://files.catbox.moe/9ei9fb.mp3"></audio>
 
     <!-- GAME CONTAINER -->
     <div id="game-container" class="w-full h-full flex flex-col overflow-hidden bg-white">
@@ -103,14 +106,28 @@
         </div>
     </div>
 
-    <!-- MONEY DISPLAY -->
-    <div id="money-display" class="fixed top-4 right-4 p-2 pl-3 bg-gray-900/90 backdrop-blur rounded-full shadow-2xl z-50 flex items-center space-x-3 border border-gray-700 transition-all hover:scale-105 cursor-default">
-        <div class="bg-yellow-400 p-1 rounded-full">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8v4m0 4v4m-6 3h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" />
+    <!-- MONEY & MUSIC DISPLAY -->
+    <div class="fixed top-4 right-4 z-50 flex items-center space-x-2">
+        <!-- Music Control Button -->
+        <button id="music-toggle-btn" onclick="toggleMusic()" class="p-2.5 bg-gray-900/90 backdrop-blur rounded-full shadow-2xl text-white border border-gray-700 hover:scale-105 transition active:scale-95 flex items-center justify-center">
+            <svg id="music-icon-on" class="w-4 h-4 text-green-400 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19V6l12-3v13M9 19c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zm12 0c0 1.105-1.343 2-3 2s-3-.895-3-2 1.343-2 3-2 3 .895 3 2zM9 10l12-3"></path>
             </svg>
+            <svg id="music-icon-off" class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5.586 15H4a1 1 0 01-1-1v-4a1 1 0 011-1h1.586l4.707-4.707C10.923 3.663 12 4.109 12 5v14c0 .891-1.077 1.337-1.707.707L5.586 15z"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2"></path>
+            </svg>
+        </button>
+
+        <!-- Money Counter -->
+        <div id="money-display" class="p-2 pl-3 bg-gray-900/90 backdrop-blur rounded-full shadow-2xl flex items-center space-x-3 border border-gray-700 transition-all cursor-default">
+            <div class="bg-yellow-400 p-1 rounded-full shrink-0">
+                <svg xmlns="http://www.w3.org/2000/svg" class="h-3 w-3 text-gray-900" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="3">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8v4m0 4v4m-6 3h12a2 2 0 002-2v-4a2 2 0 00-2-2H6a2 2 0 00-2 2v4a2 2 0 002 2z" />
+                </svg>
+            </div>
+            <span id="money-counter" class="text-sm sm:text-base font-bold tracking-wide text-white pr-2">-- грн</span>
         </div>
-        <span id="money-counter" class="text-sm sm:text-base font-bold tracking-wide text-white pr-2">-- грн</span>
     </div>
     
     <!-- MODAL: PURCHASE -->
@@ -262,10 +279,43 @@
                     
                     <input type="range" id="tariff-price-slider" min="0" max="99999" value="0" step="10" class="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer" oninput="updateTariffPrice(this.value, true)">
                     
-                    <!-- NEW: Net Income Display -->
+                    <!-- Net Income Display -->
                     <div class="mt-6 pt-4 border-t border-gray-800 flex justify-between items-center">
                          <span class="text-xs text-gray-400 font-bold uppercase">Чистая прибыль с абонента:</span>
                          <span id="tariff-net-income" class="font-mono text-lg font-bold">0.00 грн</span>
+                    </div>
+                </div>
+
+                <!-- BOTS MANAGEMENT FOR TARIFF -->
+                <div class="p-5 bg-purple-50 border border-purple-200 rounded-2xl">
+                    <div class="flex justify-between items-center mb-3">
+                        <div class="flex items-center space-x-2">
+                            <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path></svg>
+                            <h3 class="font-bold text-purple-900 text-sm">Авто-Бот обработки заявок (26 дней)</h3>
+                        </div>
+                        <span id="bot-status-badge" class="px-2.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600">Нет бота</span>
+                    </div>
+
+                    <p class="text-xs text-gray-600 mb-4">Бот автоматически принимает входящие заявки на этот тариф, гарантируя доход, когда вы заняты.</p>
+
+                    <div class="space-y-2">
+                        <label class="block text-xs uppercase text-purple-800 font-bold">Выберите тип бота:</label>
+                        <select id="tariff-bot-select" onchange="updateBotSelectionUI()" class="block w-full p-3 text-sm border-purple-200 focus:outline-none focus:ring-2 focus:ring-purple-500 rounded-xl bg-white font-medium">
+                            <option value="none">Отключен (Без бота)</option>
+                            <option value="slow">Медленный бот (Задержка 15-20с) — 3× Цена тарифа</option>
+                            <option value="standard">Стандартный бот (Задержка 7-10с) — 7× Цена тарифа</option>
+                            <option value="vip">VIP-Бот (Задержка 1-2с) — 15× Цена тарифа</option>
+                        </select>
+                    </div>
+
+                    <div id="bot-info-card" class="mt-3 p-3 bg-white rounded-xl border border-purple-100 flex justify-between items-center text-xs">
+                        <div>
+                            <p class="font-semibold text-gray-800" id="bot-cost-text">Стоимость подписки: 0 грн</p>
+                            <p class="text-gray-500" id="bot-expiry-text">Оплачивается на 26 игровых дней</p>
+                        </div>
+                        <button id="buy-bot-btn" type="button" onclick="buyOrUpdateBot()" class="px-4 py-2 bg-purple-600 text-white font-bold rounded-lg hover:bg-purple-700 transition shadow-sm">
+                            Активировать
+                        </button>
                     </div>
                 </div>
 
@@ -275,13 +325,12 @@
             <div class="p-4 sm:p-6 border-t border-gray-100 flex justify-between items-center bg-gray-50 shrink-0">
                 <div class="flex flex-col sm:flex-row gap-2">
                     <button id="delete-tariff-btn" onclick="confirmDeleteTariff()" class="hidden text-red-500 hover:text-red-700 font-medium text-sm px-2">Удалить</button>
-                    <!-- NEW: Pause Button -->
                     <button id="pause-tariff-btn" onclick="toggleTariffPause()" class="hidden text-gray-500 hover:text-gray-800 font-medium text-sm px-2">Приостановить</button>
                 </div>
                 
                 <div class="flex space-x-3 sm:space-x-4 ml-auto">
                     <button onclick="closeTariffModal()" class="px-4 sm:px-6 py-3 bg-white border border-gray-300 text-gray-700 font-bold rounded-xl hover:bg-gray-50 transition">Отмена</button>
-                    <button id="confirm-tariff-btn" onclick="handleCreateTariff()" class="px-6 sm:px-8 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 shadow-lg transform active:scale-95 transition">Создать</button>
+                    <button id="confirm-tariff-btn" onclick="handleCreateTariff()" class="px-6 sm:px-8 py-3 bg-black text-white font-bold rounded-xl hover:bg-gray-800 shadow-lg transform active:scale-95 transition">Сохранить</button>
                 </div>
             </div>
         </div>
@@ -326,6 +375,7 @@
         const MARKET_BASE_GB = 3.50;
         const MARKET_BASE_MIN = 0.50;
         const GAME_DAY_SECONDS = 15; // 1 игровой день = 15 секунд реального
+        const BOT_SUBSCRIPTION_DAYS = 26; // 26 игровых дней
         
         const SPEED_TYPES = [
             { id: "2G", label: "2G", basePrice: 0.75 },
@@ -337,6 +387,19 @@
             { id: "5G+", label: "5G+", basePrice: 15.00 }
         ];
 
+        const BOTS_CONFIG = {
+            none: { id: 'none', label: 'Без бота', delayMin: 0, delayMax: 0, multiplier: 0 },
+            slow: { id: 'slow', label: 'Медленный бот', delayMin: 15, delayMax: 20, multiplier: 3 },
+            standard: { id: 'standard', label: 'Стандартный бот', delayMin: 7, delayMax: 10, multiplier: 7 },
+            vip: { id: 'vip', label: 'VIP-Бот', delayMin: 1, delayMax: 2, multiplier: 15 }
+        };
+
+        const SAVE_KEYS = [
+            'telecomTycoonSave_v7',
+            'telecomTycoonSave_v6',
+            'telecomTycoonSave_v5'
+        ];
+
         const UPDATE_INTERVAL_MS = 180000; // 3 минуты
 
         // --- GLOBAL STATE ---
@@ -344,51 +407,70 @@
         let speedOffers = []; 
         let currentScreen = 'market'; 
         let currentView = 'traffic'; 
-        
-        // Default player state
+        let isAudioPlaying = false;
+        let audioInitialized = false;
+
+        // Default player state structure
         const DEFAULT_PLAYER_DATA = {
             companyName: "Моя Компания",
             balance: 1000.00,
             trafficGB: 0,
             minutes: 0,
-            tariffs: [], // { id, name, durationDays, trafficRaw, minutesRaw, price, speed, paused: bool }
+            tariffs: [], // { id, name, durationDays, trafficRaw, minutesRaw, price, speed, paused: bool, botType: string, botExpiresAt: timestamp }
             speeds: {
                 "2G": 0, "3G": 0, "3G+": 0, "4G": 0, "4G+": 0, "5G": 0, "5G+": 0
             },
-            requests: [],     // { id, name, phone, tariffId, expiresAt }
-            subscribers: []   // { id, name, phone, tariffSnapshot, startTime, endTime }
+            requests: [],     // { id, name, phone, tariffId, expiresAt, botProcessAt }
+            subscribers: [],  // { id, name, phone, tariffName, tariffPrice, startTime, endTime, totalDuration }
+            settings: {
+                musicEnabled: true
+            }
         };
 
         let playerData = JSON.parse(JSON.stringify(DEFAULT_PLAYER_DATA));
 
-        // --- LOCAL STORAGE ---
+        // --- SAFE LOCAL STORAGE & MIGRATION ---
         function saveGame() {
-            localStorage.setItem('telecomTycoonSave_v6', JSON.stringify(playerData));
-            console.log("Game Saved.");
+            try {
+                const serialized = JSON.stringify(playerData);
+                SAVE_KEYS.forEach(key => localStorage.setItem(key, serialized));
+            } catch (e) {
+                console.error("Failed to save game:", e);
+            }
         }
 
         function loadGame() {
-            const saved = localStorage.getItem('telecomTycoonSave_v6');
-            if (saved) {
+            let savedRaw = null;
+            for (const key of SAVE_KEYS) {
+                savedRaw = localStorage.getItem(key);
+                if (savedRaw) break;
+            }
+
+            if (savedRaw) {
                 try {
-                    const parsed = JSON.parse(saved);
-                    // Merge to ensure new fields (like requests) exist if loading old save
-                    playerData = { ...DEFAULT_PLAYER_DATA, ...parsed };
+                    const parsed = JSON.parse(savedRaw);
                     
-                    // Fix nested objects merging
-                    if(parsed.speeds) playerData.speeds = parsed.speeds;
-                    if(parsed.tariffs) playerData.tariffs = parsed.tariffs;
-                    if(parsed.requests) playerData.requests = parsed.requests;
-                    if(parsed.subscribers) playerData.subscribers = parsed.subscribers;
+                    // DEEP MERGE to keep existing user progress untouched
+                    playerData = {
+                        ...DEFAULT_PLAYER_DATA,
+                        ...parsed,
+                        speeds: { ...DEFAULT_PLAYER_DATA.speeds, ...(parsed.speeds || {}) },
+                        settings: { ...DEFAULT_PLAYER_DATA.settings, ...(parsed.settings || {}) }
+                    };
 
-                    // Ensure 'paused' property exists on old saves
-                    playerData.tariffs.forEach(t => {
-                        if(typeof t.paused === 'undefined') t.paused = false;
-                    });
+                    playerData.tariffs = (parsed.tariffs || []).map(t => ({
+                        paused: false,
+                        botType: 'none',
+                        botExpiresAt: 0,
+                        ...t
+                    }));
 
-                    console.log("Game Loaded.", playerData);
+                    playerData.requests = parsed.requests || [];
+                    playerData.subscribers = parsed.subscribers || [];
+
+                    console.log("Game progress successfully loaded and migrated:", playerData);
                 } catch (e) {
-                    console.error("Save file corrupted, starting fresh.", e);
+                    console.error("Corrupted save encountered. Restoring baseline safely without wiping whole state.", e);
                 }
             }
         }
@@ -402,11 +484,63 @@
         }
 
         function executeResetGame() {
-            localStorage.removeItem('telecomTycoonSave_v6');
+            SAVE_KEYS.forEach(key => localStorage.removeItem(key));
             location.reload();
         }
 
-        // --- REQUEST SYSTEM LOGIC ---
+        // --- AUDIO CONTROLS ---
+        function enableAudioOnFirstClick() {
+            if (audioInitialized) return;
+            audioInitialized = true;
+            if (playerData.settings.musicEnabled) {
+                playAudio();
+            }
+        }
+
+        function playAudio() {
+            const audio = document.getElementById('bg-music');
+            if (!audio) return;
+            audio.play().then(() => {
+                isAudioPlaying = true;
+                updateAudioUI();
+            }).catch(() => {
+                isAudioPlaying = false;
+                updateAudioUI();
+            });
+        }
+
+        function pauseAudio() {
+            const audio = document.getElementById('bg-music');
+            if (!audio) return;
+            audio.pause();
+            isAudioPlaying = false;
+            updateAudioUI();
+        }
+
+        function toggleMusic() {
+            playerData.settings.musicEnabled = !playerData.settings.musicEnabled;
+            saveGame();
+            
+            if (playerData.settings.musicEnabled) {
+                playAudio();
+            } else {
+                pauseAudio();
+            }
+        }
+
+        function updateAudioUI() {
+            const iconOn = document.getElementById('music-icon-on');
+            const iconOff = document.getElementById('music-icon-off');
+            if (isAudioPlaying && playerData.settings.musicEnabled) {
+                iconOn.classList.remove('hidden');
+                iconOff.classList.add('hidden');
+            } else {
+                iconOn.classList.add('hidden');
+                iconOff.classList.remove('hidden');
+            }
+        }
+
+        // --- REQUEST & BOT SYSTEM LOGIC ---
         
         function generateRandomPhoneNumber() {
             const prefixes = ["050", "066", "095", "099", "067", "068", "096", "097", "098", "063", "073", "093"];
@@ -416,12 +550,11 @@
         }
 
         function generateRandomName() {
-            const names = ["Алексей", "Дмитрий", "Ольга", "Мария", "Иван", "Сергей", "Анна", "Елена", "Максим", "Андрей", "Николай", "Татьяна"];
+            const names = ["Алексей", "Дмитрий", "Ольга", "Мария", "Иван", "Сергей", "Анна", "Елена", "Максим", "Андрей", "Николай", "Татьяна", "Екатерина", "Виктор"];
             return names[getRandomInt(0, names.length - 1)];
         }
 
         function getPriceCategory(tariff) {
-            // Re-calculate cost basis
             const calcTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw;
             const calcMin = tariff.minutesRaw > 1000 ? 2000 : tariff.minutesRaw;
             const resourceCost = (calcTraffic * MARKET_BASE_GB) + (calcMin * MARKET_BASE_MIN);
@@ -431,8 +564,7 @@
             
             const profit = tariff.price - totalCost;
             
-            // Logic for categories
-            if (profit < 0) return { id: 'loss', label: 'Убыточная', chance: 0.8, profitVal: profit }; // 80% chance tick
+            if (profit < 0) return { id: 'loss', label: 'Убыточная', chance: 0.8, profitVal: profit };
             if (profit < totalCost * 0.1) return { id: 'very_low', label: 'Очень низкая', chance: 0.5, profitVal: profit };
             if (profit < totalCost * 0.3) return { id: 'low', label: 'Низкая', chance: 0.3, profitVal: profit };
             if (profit < totalCost * 0.6) return { id: 'medium', label: 'Средняя', chance: 0.15, profitVal: profit };
@@ -441,74 +573,87 @@
         }
 
         function gameLoop() {
+            const now = Date.now();
+
             // 1. Generate Requests
             if (playerData.tariffs.length > 0) {
                 playerData.tariffs.forEach(tariff => {
-                    // SKIP PAUSED TARIFFS
                     if (tariff.paused) return;
 
-                    // Check if player has resources for this tariff
                     const reqTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw; 
                     const reqMinutes = tariff.minutesRaw > 1000 ? 500 : tariff.minutesRaw;
                     
                     const hasTraffic = playerData.trafficGB >= reqTraffic;
                     const hasMinutes = playerData.minutes >= reqMinutes;
-                    // FIX: Check if we have enough days of license for the tariff duration
-                    const hasLicense = playerData.speeds[tariff.speed] >= tariff.durationDays;
+                    const hasLicense = playerData.speeds[tariff.speed] > 0;
 
                     if (hasTraffic && hasMinutes && hasLicense) {
                         const cat = getPriceCategory(tariff);
-                        // Random chance based on category
                         if (Math.random() < cat.chance) {
-                            // Spawn Request
+                            
+                            // Check bot settings
+                            let botProcessTime = null;
+                            const isBotActive = tariff.botType && tariff.botType !== 'none' && tariff.botExpiresAt > now;
+                            if (isBotActive) {
+                                const botCfg = BOTS_CONFIG[tariff.botType];
+                                if (botCfg) {
+                                    const delaySec = getRandomFloat(botCfg.delayMin, botCfg.delayMax);
+                                    botProcessTime = now + (delaySec * 1000);
+                                }
+                            }
+
                             const req = {
-                                id: Date.now() + getRandomInt(0, 9999),
+                                id: now + getRandomInt(0, 99999),
                                 name: generateRandomName(),
                                 phone: generateRandomPhoneNumber(),
                                 tariffId: tariff.id,
                                 tariffName: tariff.name,
                                 price: tariff.price,
-                                expiresAt: Date.now() + 30000 // Valid for 30 sec
+                                expiresAt: now + 30000, // Valid for 30 sec
+                                botProcessAt: botProcessTime
                             };
-                            // Limit max requests queue
-                            if (playerData.requests.length < 10) {
+
+                            if (playerData.requests.length < 15) {
                                 playerData.requests.push(req);
                                 updateRequestsBadge();
-                                if(currentScreen === 'requests') renderRequestsScreen();
+                                if (currentScreen === 'requests') renderRequestsScreen();
                             }
                         }
                     }
                 });
             }
 
-            // 2. Clean expired subscribers AND PAY MONEY
-            const now = Date.now();
-            let moneyEarned = 0;
-
-            // Find subscribers whose contract ended
-            const expiredSubs = playerData.subscribers.filter(sub => sub.endTime <= now);
-            
-            if (expiredSubs.length > 0) {
-                // Award money for finished contracts
-                expiredSubs.forEach(sub => {
-                    moneyEarned += sub.tariffPrice;
-                });
-                
-                playerData.balance += moneyEarned;
-                if (moneyEarned > 0) updateMoneyDisplay();
-
-                // Remove expired subs
-                playerData.subscribers = playerData.subscribers.filter(sub => sub.endTime > now);
-                
-                saveGame();
-                if(currentScreen === 'requests') renderRequestsScreen();
+            // 2. Process Automated Bot Actions
+            for (let i = playerData.requests.length - 1; i >= 0; i--) {
+                const req = playerData.requests[i];
+                if (req.botProcessAt && now >= req.botProcessAt) {
+                    // Bot attempts auto accept
+                    acceptRequest(req.id, true);
+                }
             }
 
-            // 3. Update active bars if on screen - OPTIMIZED: No full render call here
+            // 3. Clean expired requests
+            const initialReqCount = playerData.requests.length;
+            playerData.requests = playerData.requests.filter(req => req.expiresAt > now);
+            if (playerData.requests.length !== initialReqCount) {
+                updateRequestsBadge();
+                if (currentScreen === 'requests') renderRequestsScreen();
+            }
+
+            // 4. Clean expired subscribers
+            const initialSubCount = playerData.subscribers.length;
+            playerData.subscribers = playerData.subscribers.filter(sub => sub.endTime > now);
+            
+            if (playerData.subscribers.length !== initialSubCount) {
+                saveGame();
+                if (currentScreen === 'requests') renderRequestsScreen();
+            }
+
+            // 5. Update UI progress bars
             if (currentScreen === 'requests') updateSubscriberProgress();
         }
 
-        function acceptRequest(reqId) {
+        function acceptRequest(reqId, isByBot = false) {
             const reqIdx = playerData.requests.findIndex(r => r.id === reqId);
             if (reqIdx === -1) return;
             
@@ -516,40 +661,30 @@
             const tariff = playerData.tariffs.find(t => t.id === req.tariffId);
 
             if (!tariff) {
-                // Tariff was deleted? Remove request
                 playerData.requests.splice(reqIdx, 1);
                 renderRequestsScreen();
                 return;
             }
 
-            // Deduct Resources
-            const deductTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw; // Nominal deduction for unlimited
+            const deductTraffic = tariff.trafficRaw > 1000 ? 100 : tariff.trafficRaw; 
             const deductMinutes = tariff.minutesRaw > 1000 ? 500 : tariff.minutesRaw;
-            const deductLicenseDays = tariff.durationDays;
-            const tech = tariff.speed;
 
             if (playerData.trafficGB < deductTraffic || playerData.minutes < deductMinutes) {
-                alert("Недостаточно ресурсов для подключения абонента!");
-                return;
-            }
-            
-            // License Check
-            if (playerData.speeds[tech] < deductLicenseDays) {
-                alert(`Недостаточно дней лицензии ${tech}! Нужно: ${deductLicenseDays} дн.`);
+                if (!isByBot) {
+                    showToast("Недостаточно ресурсов для подключения!");
+                }
                 return;
             }
 
-            // Execute Transaction (Resources Only - Money is paid LATER)
+            // Execute Transaction
             playerData.trafficGB -= deductTraffic;
             playerData.minutes -= deductMinutes;
-            playerData.speeds[tech] -= deductLicenseDays; // Deduct days
-            // playerData.balance += tariff.price; // <-- REMOVED: Immediate payment
+            playerData.balance += tariff.price;
 
-            // Create Subscriber (SNAPSHOT of tariff logic)
             const durationMs = tariff.durationDays * GAME_DAY_SECONDS * 1000;
             const newSub = {
                 id: req.id,
-                name: req.name,
+                name: req.name + (isByBot ? " (Бот)" : ""),
                 phone: req.phone,
                 tariffName: tariff.name,
                 tariffPrice: tariff.price,
@@ -559,13 +694,16 @@
             };
 
             playerData.subscribers.push(newSub);
-            playerData.requests.splice(reqIdx, 1); // Remove request
+            playerData.requests.splice(reqIdx, 1);
 
             saveGame();
-            renderRequestsScreen();
+            if (currentScreen === 'requests') renderRequestsScreen();
             updateRequestsBadge();
-            // Update balance in header if visible
             updateMoneyDisplay();
+
+            if (isByBot) {
+                showToast(`🤖 Бот подключил абонента: ${req.name} (+${tariff.price} грн)`);
+            }
         }
 
         function rejectRequest(reqId) {
@@ -576,6 +714,7 @@
 
         function updateRequestsBadge() {
             const badge = document.getElementById('requests-badge');
+            if (!badge) return;
             if (playerData.requests.length > 0) {
                 badge.classList.remove('hidden');
             } else {
@@ -583,8 +722,15 @@
             }
         }
 
+        function showToast(message) {
+            const toast = document.createElement('div');
+            toast.className = 'fixed bottom-20 left-1/2 transform -translate-x-1/2 bg-gray-900 text-white px-4 py-2 rounded-xl text-xs font-semibold shadow-2xl z-[120] fade-in border border-gray-700 pointer-events-none';
+            toast.textContent = message;
+            document.body.appendChild(toast);
+            setTimeout(() => toast.remove(), 3000);
+        }
+
         // --- UTILS ---
-        
         let activePurchase = {
             type: null,
             providerId: null,
@@ -609,17 +755,18 @@
             updateMoneyDisplay();
             startCountdown();
             changeScreen('company'); 
+            updateAudioUI();
             
-            // Start Request Generator Loop
-            setInterval(gameLoop, 2000); // Check every 2 seconds
+            // Loop for requests & bots logic
+            setInterval(gameLoop, 1000);
             
             // Autosave loop
-            setInterval(saveGame, 10000);
+            setInterval(saveGame, 8000);
 
-            // Separate smooth loop for progress bars to avoid blinking
+            // Progress bar updates
             setInterval(updateSubscriberProgress, 200);
 
-            console.log("Telecom Tycoon initialized v0.9 (Delayed Payment)");
+            console.log("Telecom Tycoon v0.9 (Preserved Progress & Bot Automation)");
         }
 
         function updateMarket() {
@@ -718,9 +865,8 @@
                         ${tabsHtml}
                     </div>
 
-                    <!-- Контейнер таблицы с прокруткой -->
+                    <!-- Таблица -->
                     <div id="market-table-content" class="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden flex-grow relative flex flex-col">
-                        <!-- Table rendered via JS -->
                     </div>
                 </div>
             `;
@@ -806,18 +952,23 @@
         // --- SCREEN: COMPANY ---
         function renderCompanyScreen() {
             const canvas = document.getElementById('game-canvas');
+            const now = Date.now();
             
             let tariffsHtml = playerData.tariffs.length === 0 
                 ? `<div class="p-8 text-center border-2 border-dashed border-gray-200 rounded-2xl text-gray-400 mt-4">Нет активных тарифов</div>` 
                 : `<div class="space-y-3 mt-4">` + playerData.tariffs.map(t => {
                     const isPaused = t.paused;
+                    const isBotActive = t.botType && t.botType !== 'none' && t.botExpiresAt > now;
+                    const botLabel = isBotActive ? (BOTS_CONFIG[t.botType] ? BOTS_CONFIG[t.botType].label : 'Бот') : null;
+
                     return `
                     <div onclick="openTariffEditor(${t.id})" class="group bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md hover:border-blue-300 transition cursor-pointer flex justify-between items-center ${isPaused ? 'opacity-60 bg-gray-50' : ''}">
                         <div>
                             <div class="flex items-center space-x-2">
                                 <h3 class="font-bold text-gray-800">${t.name}</h3>
                                 <span class="px-2 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700">${t.speed}</span>
-                                ${isPaused ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-600">PAUSED</span>' : ''}
+                                ${isPaused ? '<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-gray-200 text-gray-600">ПАУЗА</span>' : ''}
+                                ${isBotActive ? `<span class="px-2 py-0.5 rounded text-[10px] font-bold bg-purple-100 text-purple-700">🤖 ${botLabel}</span>` : ''}
                             </div>
                             <p class="text-xs text-gray-500 mt-1">
                                 ${t.trafficRaw > 1000 ? '∞ ГБ' : t.trafficRaw + ' ГБ'} • 
@@ -919,11 +1070,10 @@
             `;
         }
 
-        // --- SCREEN: REQUESTS (NEW) ---
+        // --- SCREEN: REQUESTS ---
         function renderRequestsScreen() {
             const canvas = document.getElementById('game-canvas');
             
-            // Generate Incoming Requests HTML
             let incomingHtml = playerData.requests.length === 0 
                 ? `<div class="p-10 text-center text-gray-400 bg-white rounded-xl border border-gray-100">
                      <p>Нет новых заявок</p>
@@ -956,14 +1106,11 @@
                     </div>
                 `).join('');
 
-            // Generate Subscribers HTML
             let subscribersHtml = playerData.subscribers.length === 0
                 ? `<div class="p-10 text-center text-gray-400 bg-white rounded-xl border border-gray-100">Список абонентов пуст</div>`
                 : playerData.subscribers.map(s => {
                     const progress = ((Date.now() - s.startTime) / s.totalDuration) * 100;
-                    const remainingSec = Math.max(0, Math.ceil((s.endTime - Date.now()) / 1000));
-                    const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
-                    
+                    const remaining = Math.max(0, Math.ceil((s.endTime - Date.now()) / 1000));
                     return `
                     <div class="bg-white p-3 rounded-xl border border-gray-200 shadow-sm mb-2 fade-in flex items-center justify-between">
                         <div class="flex items-center space-x-3 flex-1 min-w-0">
@@ -976,7 +1123,7 @@
                             </div>
                         </div>
                         <div class="flex flex-col items-end w-24">
-                            <span id="sub-time-${s.id}" class="text-xs font-mono text-blue-600 font-bold mb-1">${remainingDays} дн.</span>
+                            <span id="sub-time-${s.id}" class="text-xs font-mono text-blue-600 font-bold mb-1">${remaining} сек</span>
                             <div class="w-full bg-gray-200 rounded-full h-1.5">
                                 <div id="sub-prog-${s.id}" class="bg-blue-500 h-1.5 rounded-full transition-all duration-300" style="width: ${Math.min(100, progress)}%"></div>
                             </div>
@@ -1012,21 +1159,19 @@
             `;
         }
         
-        // --- NEW OPTIMIZED PROGRESS UPDATE (PREVENTS BLINKING) ---
         function updateSubscriberProgress() {
-            if(currentScreen !== 'requests') return;
+            if (currentScreen !== 'requests') return;
 
             const now = Date.now();
             playerData.subscribers.forEach(s => {
                  const progress = ((now - s.startTime) / s.totalDuration) * 100;
-                 const remainingSec = Math.max(0, Math.ceil((s.endTime - now) / 1000));
-                 const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
+                 const remaining = Math.max(0, Math.ceil((s.endTime - now) / 1000));
                  
                  const progEl = document.getElementById(`sub-prog-${s.id}`);
                  const timeEl = document.getElementById(`sub-time-${s.id}`);
                  
-                 if(progEl) progEl.style.width = `${Math.min(100, progress)}%`;
-                 if(timeEl) timeEl.textContent = `${remainingDays} дн.`;
+                 if (progEl) progEl.style.width = `${Math.min(100, progress)}%`;
+                 if (timeEl) timeEl.textContent = `${remaining} сек`;
             });
         }
 
@@ -1046,9 +1191,14 @@
                            class="w-full p-3 border border-gray-300 rounded-xl mb-4 focus:ring-2 focus:ring-blue-500 focus:outline-none"
                            oninput="updateCompanyName(this.value)">
                     
-                    <hr class="my-6 border-gray-100">
-                    
-                    <button onclick="saveGame(); alert('Сохранено!')" class="w-full mb-3 px-4 py-3 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition">
+                    <div class="flex items-center justify-between py-3 border-t border-b border-gray-100 my-4">
+                        <span class="text-sm font-medium text-gray-700">Фоновая Музыка</span>
+                        <button onclick="toggleMusic(); renderSettingsScreen()" class="px-4 py-2 rounded-xl text-xs font-bold ${playerData.settings.musicEnabled ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}">
+                            ${playerData.settings.musicEnabled ? 'Включена' : 'Выключена'}
+                        </button>
+                    </div>
+
+                    <button onclick="saveGame(); showToast('Сохранено!')" class="w-full mb-3 px-4 py-3 bg-blue-50 text-blue-600 font-bold rounded-xl hover:bg-blue-100 transition">
                         Принудительное сохранение
                     </button>
 
@@ -1056,7 +1206,7 @@
                         Сброс прогресса (Удалить сохранение)
                     </button>
 
-                    <p class="text-xs text-gray-400 mt-6 text-center">Версия игры: 0.9.1 (Delayed Payment)</p>
+                    <p class="text-xs text-gray-400 mt-6 text-center">Версия игры: 0.9.0 (Bot Automation & Music Update)</p>
                 </div>
              `;
         }
@@ -1179,7 +1329,9 @@
             price: 0,
             duration: 7,
             speed: '4G',
-            paused: false
+            paused: false,
+            botType: 'none',
+            botExpiresAt: 0
         };
 
         window.openTariffCreator = function() {
@@ -1192,14 +1344,17 @@
             if (!t) return;
 
             resetTariffForm();
+            tariffState.id = t.id;
             tariffState.paused = t.paused || false;
+            tariffState.botType = t.botType || 'none';
+            tariffState.botExpiresAt = t.botExpiresAt || 0;
             
             document.getElementById('tariff-modal-title').textContent = "Редактировать Тариф";
             document.getElementById('edit-tariff-id').value = t.id;
             document.getElementById('confirm-tariff-btn').textContent = "Сохранить";
             document.getElementById('delete-tariff-btn').classList.remove('hidden');
             
-            // Setup Pause Button
+            // Pause Button
             const pauseBtn = document.getElementById('pause-tariff-btn');
             pauseBtn.classList.remove('hidden');
             if (t.paused) {
@@ -1211,6 +1366,7 @@
             }
 
             document.getElementById('tariff-name').value = t.name;
+            document.getElementById('tariff-bot-select').value = tariffState.botType;
             
             updateTariffDuration(t.durationDays);
             updateTariffResource('traffic', t.trafficRaw);
@@ -1221,6 +1377,7 @@
             speedSelect.value = t.speed;
             
             updatePriceFeedbackUI();
+            updateBotSelectionUI();
             document.getElementById('tariff-creator-modal').classList.remove('hidden');
         }
 
@@ -1232,12 +1389,25 @@
             document.getElementById('pause-tariff-btn').classList.add('hidden');
             document.getElementById('tariff-name').value = "";
             document.getElementById('tariff-speed-select').value = "4G";
-            tariffState.paused = false;
+            document.getElementById('tariff-bot-select').value = "none";
+            
+            tariffState = {
+                id: null,
+                traffic: 0,
+                minutes: 0,
+                price: 0,
+                duration: 7,
+                speed: '4G',
+                paused: false,
+                botType: 'none',
+                botExpiresAt: 0
+            };
             
             updateTariffDuration(7);
             updateTariffResource('traffic', 0);
             updateTariffResource('minutes', 0);
             updateTariffPrice(0);
+            updateBotSelectionUI();
         }
 
         window.closeTariffModal = function() {
@@ -1246,7 +1416,7 @@
         
         window.toggleTariffPause = function() {
             const id = document.getElementById('edit-tariff-id').value;
-            if(!id) return; // Cant pause new tariff before creation
+            if(!id) return;
             
             const t = playerData.tariffs.find(x => x.id == id);
             if(t) {
@@ -1290,9 +1460,85 @@
             document.getElementById('tariff-price-input').value = v;
             if(!fromSlider) document.getElementById('tariff-price-slider').value = v;
             updatePriceFeedbackUI();
+            updateBotSelectionUI();
         }
 
-        // Updated logic to use same calculation as request generator
+        // --- BOT SELECTION & SUBSCRIPTION LOGIC ---
+        window.updateBotSelectionUI = function() {
+            const botType = document.getElementById('tariff-bot-select').value;
+            const botCfg = BOTS_CONFIG[botType];
+            const botCost = tariffState.price * botCfg.multiplier;
+            
+            const now = Date.now();
+            const isCurrentBotActive = tariffState.botType === botType && tariffState.botExpiresAt > now;
+            
+            const statusBadge = document.getElementById('bot-status-badge');
+            const costText = document.getElementById('bot-cost-text');
+            const expiryText = document.getElementById('bot-expiry-text');
+            const buyBtn = document.getElementById('buy-bot-btn');
+
+            costText.textContent = `Стоимость подписки (26 дн.): ${botCost.toLocaleString()} грн`;
+
+            if (botType === 'none') {
+                statusBadge.textContent = "Без бота";
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-gray-200 text-gray-600";
+                expiryText.textContent = "Ручная обработка заявок";
+                buyBtn.classList.add('hidden');
+            } else if (isCurrentBotActive) {
+                const remainingSec = Math.max(0, Math.ceil((tariffState.botExpiresAt - now) / 1000));
+                const remainingDays = Math.ceil(remainingSec / GAME_DAY_SECONDS);
+                
+                statusBadge.textContent = "Активен";
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-green-100 text-green-700";
+                expiryText.textContent = `Осталось дней подписки: ${remainingDays} дн.`;
+                buyBtn.classList.remove('hidden');
+                buyBtn.textContent = "Продлить";
+            } else {
+                statusBadge.textContent = "Не активен";
+                statusBadge.className = "px-2.5 py-1 rounded-full text-xs font-bold bg-amber-100 text-amber-700";
+                expiryText.textContent = "Требуется подписка на 26 игровых дней";
+                buyBtn.classList.remove('hidden');
+                buyBtn.textContent = "Купить Подписку";
+            }
+        }
+
+        window.buyOrUpdateBot = function() {
+            const botType = document.getElementById('tariff-bot-select').value;
+            if (botType === 'none') return;
+
+            const botCfg = BOTS_CONFIG[botType];
+            const cost = tariffState.price * botCfg.multiplier;
+
+            if (playerData.balance < cost) {
+                showToast("Недостаточно средств для подписки на бота!");
+                return;
+            }
+
+            playerData.balance -= cost;
+            
+            const now = Date.now();
+            const currentExpiry = (tariffState.botType === botType && tariffState.botExpiresAt > now) ? tariffState.botExpiresAt : now;
+            const newExpiry = currentExpiry + (BOT_SUBSCRIPTION_DAYS * GAME_DAY_SECONDS * 1000);
+
+            tariffState.botType = botType;
+            tariffState.botExpiresAt = newExpiry;
+
+            // If updating existing tariff directly
+            const editId = document.getElementById('edit-tariff-id').value;
+            if (editId) {
+                const t = playerData.tariffs.find(x => x.id == editId);
+                if (t) {
+                    t.botType = botType;
+                    t.botExpiresAt = newExpiry;
+                }
+            }
+
+            saveGame();
+            updateMoneyDisplay();
+            updateBotSelectionUI();
+            showToast(`🤖 Подписка на бота ${botCfg.label} успешно оформлена!`);
+        }
+
         window.updatePriceFeedbackUI = function() {
             const tempTariff = {
                 trafficRaw: tariffState.traffic,
@@ -1304,7 +1550,6 @@
             
             const cat = getPriceCategory(tempTariff);
             
-            // Check license
             const speedDaysOwned = playerData.speeds[tempTariff.speed];
             const speedIndicator = document.getElementById('speed-availability-indicator');
             if (speedDaysOwned > 0) {
@@ -1321,7 +1566,6 @@
 
             profitEl.textContent = cat.label;
             
-            // Color logic
             let colorClass = "text-gray-500";
             if(cat.id === 'loss') colorClass = "text-red-500";
             else if(cat.id === 'very_low' || cat.id === 'low') colorClass = "text-green-600";
@@ -1336,7 +1580,6 @@
             else if(cat.id === 'very_high') statusEl.textContent = "Почти нет спроса";
             else statusEl.textContent = "Умеренный спрос";
             
-            // Show Net Income
             const netProfit = cat.profitVal.toFixed(2);
             netIncomeEl.textContent = `${netProfit} грн`;
             if (cat.profitVal >= 0) {
@@ -1350,6 +1593,7 @@
             const name = document.getElementById('tariff-name').value.trim() || "Тариф #" + getRandomInt(100,999);
             const id = document.getElementById('edit-tariff-id').value;
             const speed = document.getElementById('tariff-speed-select').value;
+            const selectedBotType = document.getElementById('tariff-bot-select').value;
 
             const newTariff = {
                 id: id ? parseInt(id) : Date.now(),
@@ -1359,7 +1603,9 @@
                 minutesRaw: tariffState.minutes,
                 price: tariffState.price,
                 speed: speed,
-                paused: tariffState.paused
+                paused: tariffState.paused,
+                botType: selectedBotType,
+                botExpiresAt: tariffState.botExpiresAt
             };
 
             if (id) {
@@ -1415,7 +1661,7 @@
             el.textContent = `${m}:${s}`;
         }
 
-        // START
+        // START APP
         window.onload = initGame;
 
     </script>
