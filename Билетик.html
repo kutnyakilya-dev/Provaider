@@ -1,0 +1,447 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Счастливый билет</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Comfortaa:wght@500;700&family=Montserrat:wght@400;600;800&display=swap');
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: 'Comfortaa', cursive, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(135deg, #ff758c 0%, #ff7eb3 50%, #7873f5 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 15px;
+      overflow-x: hidden;
+      position: relative;
+    }
+
+    /* Анимированный фоновый декор (сердечки) */
+    .bg-hearts {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+      z-index: 0;
+      overflow: hidden;
+    }
+    .heart-particle {
+      position: absolute;
+      color: rgba(255, 255, 255, 0.35);
+      animation: floatUp 8s infinite linear;
+    }
+    @keyframes floatUp {
+      0% { transform: translateY(100vh) scale(0.5) rotate(0deg); opacity: 0; }
+      20% { opacity: 0.8; }
+      100% { transform: translateY(-10vh) scale(1.2) rotate(360deg); opacity: 0; }
+    }
+
+    /* Главная карточка */
+    .card {
+      background: rgba(255, 255, 255, 0.92);
+      backdrop-filter: blur(10px);
+      border-radius: 28px;
+      padding: 25px 20px;
+      box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2), inset 0 0 15px rgba(255, 255, 255, 0.6);
+      width: 100%;
+      max-width: 480px;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      border: 3px solid rgba(255, 255, 255, 0.8);
+    }
+
+    .page { display: none; }
+    .active { display: block; }
+
+    h2 {
+      font-family: 'Montserrat', sans-serif;
+      font-weight: 800;
+      color: #ff3366;
+      font-size: 22px;
+      text-shadow: 1px 1px 2px rgba(0,0,0,0.1);
+      margin-bottom: 15px;
+    }
+
+    /* Конверт */
+    .envelope-wrapper {
+      cursor: pointer;
+      margin: 30px auto;
+      width: 180px;
+      height: 120px;
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      border-radius: 15px;
+      position: relative;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      box-shadow: 0 12px 25px rgba(255, 65, 108, 0.5);
+      animation: bounce 2s infinite ease-in-out;
+    }
+    @keyframes bounce {
+      0%, 100% { transform: translateY(0) scale(1); }
+      50% { transform: translateY(-10px) scale(1.03); }
+    }
+    .heart-seal {
+      font-size: 50px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.2));
+      animation: pulse 1.2s infinite;
+    }
+    @keyframes pulse {
+      0% { transform: scale(1); }
+      50% { transform: scale(1.25); }
+      100% { transform: scale(1); }
+    }
+
+    /* Кнопки */
+    .btn-group {
+      margin-top: 30px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      min-height: 80px;
+      position: relative;
+    }
+    button {
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 700;
+      border: none;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: transform 0.2s, box-shadow 0.2s, background 0.2s;
+    }
+    .btn-yes {
+      background: linear-gradient(135deg, #11998e, #38ef7d);
+      color: white;
+      box-shadow: 0 8px 20px rgba(56, 239, 125, 0.4);
+    }
+    .btn-yes:hover {
+      transform: scale(1.1);
+      box-shadow: 0 10px 25px rgba(56, 239, 125, 0.6);
+    }
+    .btn-no {
+      background: linear-gradient(135deg, #ff416c, #ff4b2b);
+      color: white;
+      box-shadow: 0 6px 15px rgba(255, 65, 108, 0.3);
+      position: fixed; /* Позволяет свободно бегать по всему экрану */
+      z-index: 999;
+      transition: all 0.1s ease-out;
+    }
+
+    /* Сетка выбора */
+    .section-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: #6c5ce7;
+      margin: 15px 0 8px;
+      text-align: left;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 10px;
+      max-height: 280px;
+      overflow-y: auto;
+      padding: 5px;
+    }
+    .grid::-webkit-scrollbar { width: 6px; }
+    .grid::-webkit-scrollbar-thumb { background: #ff758c; border-radius: 10px; }
+
+    .option-card {
+      border: 2px solid #f0f0f0;
+      border-radius: 16px;
+      padding: 12px 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      transition: all 0.2s;
+      background: #ffffff;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      user-select: none;
+    }
+    .option-card:hover { transform: translateY(-2px); }
+    .option-card.selected {
+      border-color: #ff3366;
+      background: linear-gradient(135deg, #ffe6eb, #fff0f3);
+      color: #ff3366;
+      box-shadow: 0 6px 15px rgba(255, 51, 102, 0.2);
+    }
+
+    .limit-counter {
+      background: linear-gradient(135deg, #ffeaa7, #fdcb6e);
+      padding: 10px 15px;
+      border-radius: 15px;
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 10px;
+      color: #d63031;
+      box-shadow: 0 4px 10px rgba(253, 203, 110, 0.3);
+    }
+
+    /* Билет */
+    .ticket {
+      background: #1e1e2f;
+      color: #fff;
+      border-radius: 20px;
+      padding: 25px 20px;
+      position: relative;
+      border: 2px dashed #ff758c;
+      box-shadow: 0 15px 30px rgba(0,0,0,0.3);
+      animation: ticketAppear 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    @keyframes ticketAppear {
+      from { transform: scale(0.5) rotate(-5deg); opacity: 0; }
+      to { transform: scale(1) rotate(0deg); opacity: 1; }
+    }
+    .ticket h2 { color: #ff758c; font-size: 20px; margin-bottom: 5px; }
+    .ticket-badge {
+      background: #ff758c;
+      color: white;
+      padding: 3px 10px;
+      border-radius: 10px;
+      font-size: 11px;
+      display: inline-block;
+      margin-bottom: 15px;
+    }
+    .ticket-list { text-align: left; margin: 15px 0; font-size: 13px; line-height: 1.8; }
+    .ticket-list li { list-style: none; padding-left: 20px; position: relative; }
+    .ticket-list li::before { content: "💖"; position: absolute; left: 0; font-size: 12px; }
+    .ticket-footer {
+      font-size: 12px;
+      color: #a4b0be;
+      margin-top: 15px;
+      border-top: 1px dashed #444;
+      padding-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="bg-hearts" id="bgHearts"></div>
+
+  <div class="card">
+    <div id="page1" class="page active">
+      <h2>Тебе письмо! 💌</h2>
+      <p style="color: #636e72; font-size: 14px;">Нажми на конверт, чтобы открыть</p>
+      <div class="envelope-wrapper" onclick="openEnvelope()">
+        <div class="heart-seal">❤️</div>
+      </div>
+    </div>
+
+    <div id="page2" class="page">
+      <h2>Ты меня любишь? 🥺</h2>
+      <div class="btn-group" id="btnGroup">
+        <button class="btn-yes" onclick="nextPage(3)">Да, конечно! 💕</button>
+        <button class="btn-no" id="btnNo">Нет 😜</button>
+      </div>
+    </div>
+
+    <div id="page3" class="page">
+      <h2>Выбор на сегодня ✨</h2>
+      
+      <div class="limit-counter" id="counter">
+        Доступно выборов: <span id="leftCount">3</span>
+      </div>
+
+      <div class="section-title">🎁 Бонусы (добавляют выборы):</div>
+      <div class="grid">
+        <div class="option-card bonus" onclick="toggleBonus(this, 1, 'Чухать спинку')">Чухать спинку (+1)</div>
+        <div class="option-card bonus" onclick="toggleBonus(this, 2, 'Массаж')">Массаж (+2)</div>
+        <div class="option-card bonus" onclick="toggleBonus(this, 1, 'Целовашки в шейку')">Целовашки в шейку (+1)</div>
+      </div>
+
+      <div class="section-title">🍕 Занятия:</div>
+      <div class="grid" id="activitiesGrid">
+        <div class="option-card activity" onclick="toggleActivity(this, 'Игра в PUBG 🎮')">Игра в PUBG</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Волейбол 🏐')">Волейбол</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Просмотр фильма 🍿')">Просмотр фильма</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Игра в хоррор 👻')">Игра в хоррор</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Игра в Roblox 🤖')">Игра в Roblox</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Нуар 🕵️‍♂️')">Нуар</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Мороженое 🍦')">Мороженое</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Семечки 🌻')">Семечки</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Избранное в TikTok 📱')">TikTok вместе</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Видео на твой выбор 🎬')">Видео на твой выбор</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Покупаться в бассейне 🏊‍♀️')">Бассейн</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Обнимашки 🫂')">Обнимашки</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Приятные слова 💬')">Приятные слова</div>
+        <div class="option-card activity" onclick="toggleActivity(this, 'Оценка твоего рисунка 🎨')">Посмотреть рисунок</div>
+      </div>
+
+      <button class="btn-yes" style="width: 100%; margin-top: 15px;" onclick="generateTicket()">Создать билет 🎟️</button>
+    </div>
+
+    <div id="page4" class="page">
+      <div class="ticket">
+        <h2>🎟️ БИЛЕТ НА СВИДАНИЕ</h2>
+        <div class="ticket-badge">VIP PASS</div>
+        
+        <div class="ticket-list">
+          <strong style="color: #ff758c;">Выбрано для программы:</strong>
+          <ul id="ticketActivities" style="margin-top: 5px;"></ul>
+          
+          <br>
+          <strong style="color: #ff758c;">Активированные бонусы:</strong>
+          <ul id="ticketBonuses" style="margin-top: 5px;"></ul>
+        </div>
+
+        <p style="font-size: 13px; color: #38ef7d; font-weight: bold; margin-top: 15px;">
+          📸 Сделай скриншот и отправь мне!
+        </p>
+        <div class="ticket-footer">Твой счастливый билетик на сегодня ❤️</div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Генерация сердечек на фоне
+    const bg = document.getElementById('bgHearts');
+    for (let i = 0; i < 20; i++) {
+      const heart = document.createElement('div');
+      heart.classList.add('heart-particle');
+      heart.innerText = ['❤️', '💖', '✨', '🌸'][Math.floor(Math.random() * 4)];
+      heart.style.left = Math.random() * 100 + 'vw';
+      heart.style.animationDuration = (Math.random() * 4 + 5) + 's';
+      heart.style.fontSize = (Math.random() * 15 + 15) + 'px';
+      bg.appendChild(heart);
+    }
+
+    let maxAllowed = 3;
+    let selectedActivities = [];
+    let selectedBonuses = [];
+
+    function openEnvelope() {
+      nextPage(2);
+      setupNoButton();
+    }
+
+    function nextPage(pageNumber) {
+      document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+      document.getElementById('page' + pageNumber).classList.add('active');
+    }
+
+    // Мгновенно убегающая кнопка "Нет"
+    function setupNoButton() {
+      const btnNo = document.getElementById('btnNo');
+      
+      // Выставляем начальную позицию рядом с кнопкой ДА
+      const btnYes = document.querySelector('.btn-yes');
+      const rect = btnYes.getBoundingClientRect();
+      btnNo.style.top = rect.top + 'px';
+      btnNo.style.left = (rect.right + 20) + 'px';
+
+      const moveNoButton = () => {
+        const padding = 50;
+        const newX = Math.random() * (window.innerWidth - btnNo.offsetWidth - padding * 2) + padding;
+        const newY = Math.random() * (window.innerHeight - btnNo.offsetHeight - padding * 2) + padding;
+        
+        btnNo.style.left = `${newX}px`;
+        btnNo.style.top = `${newY}px`;
+      };
+
+      // Реакция на приближение мыши
+      document.addEventListener('mousemove', (e) => {
+        if (!document.getElementById('page2').classList.contains('active')) return;
+        
+        const btnRect = btnNo.getBoundingClientRect();
+        const btnCenterX = btnRect.left + btnRect.width / 2;
+        const btnCenterY = btnRect.top + btnRect.height / 2;
+
+        const distance = Math.hypot(e.clientX - btnCenterX, e.clientY - btnCenterY);
+
+        // Если курсор ближе чем 120px — кнопка убегает
+        if (distance < 120) {
+          moveNoButton();
+        }
+      });
+
+      // Для сенсорных экранов
+      btnNo.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        moveNoButton();
+      });
+    }
+
+    function updateCounter() {
+      const left = maxAllowed - selectedActivities.length;
+      document.getElementById('leftCount').innerText = left;
+    }
+
+    function toggleBonus(element, bonusValue, name) {
+      if (element.classList.contains('selected')) {
+        element.classList.remove('selected');
+        maxAllowed -= bonusValue;
+        selectedBonuses = selectedBonuses.filter(b => b !== name);
+      } else {
+        element.classList.add('selected');
+        maxAllowed += bonusValue;
+        selectedBonuses.push(name);
+      }
+      updateCounter();
+    }
+
+    function toggleActivity(element, name) {
+      if (element.classList.contains('selected')) {
+        element.classList.remove('selected');
+        selectedActivities = selectedActivities.filter(a => a !== name);
+      } else {
+        if (selectedActivities.length < maxAllowed) {
+          element.classList.add('selected');
+          selectedActivities.push(name);
+        } else {
+          alert('Сначала активируй доп. бонусы или сними выделение с других занятий!');
+        }
+      }
+      updateCounter();
+    }
+
+    function generateTicket() {
+      if (selectedActivities.length === 0) {
+        alert('Выбери хотя бы одно занятие!');
+        return;
+      }
+
+      const actList = document.getElementById('ticketActivities');
+      actList.innerHTML = '';
+      selectedActivities.forEach(act => {
+        let li = document.createElement('li');
+        li.innerText = act;
+        actList.appendChild(li);
+      });
+
+      const bonusList = document.getElementById('ticketBonuses');
+      bonusList.innerHTML = '';
+      if (selectedBonuses.length > 0) {
+        selectedBonuses.forEach(b => {
+          let li = document.createElement('li');
+          li.innerText = b;
+          bonusList.appendChild(li);
+        });
+      } else {
+        bonusList.innerHTML = '<li>Без доп. условий</li>';
+      }
+
+      nextPage(4);
+    }
+  </script>
+
+</body>
+</html>
