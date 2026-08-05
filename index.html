@@ -409,6 +409,7 @@
         let currentView = 'traffic'; 
         let isAudioPlaying = false;
         let audioInitialized = false;
+        let lastSpeedTick = Date.now();
 
         // Default player state structure
         const DEFAULT_PLAYER_DATA = {
@@ -651,6 +652,35 @@
 
             // 5. Update UI progress bars
             if (currentScreen === 'requests') updateSubscriberProgress();
+
+            // 6. Decrease Speed License Days over time (1 game day = 15 seconds)
+            const speedTickDiff = now - lastSpeedTick;
+            const dayMS = GAME_DAY_SECONDS * 1000;
+            if (speedTickDiff >= dayMS) {
+                const daysPassed = Math.floor(speedTickDiff / dayMS);
+                lastSpeedTick += daysPassed * dayMS;
+
+                // Определение технологий, которые активно используются подключенными абонентами
+                const activeSpeeds = new Set(
+                    playerData.subscribers
+                        .map(sub => sub.speed || (playerData.tariffs.find(t => t.id === sub.tariffId || t.name === sub.tariffName) || {}).speed)
+                        .filter(Boolean)
+                );
+
+                let speedsUpdated = false;
+                for (const tech in playerData.speeds) {
+                    // Списываем дни только если скорость куплена И хотя бы один абонент ей пользуется
+                    if (playerData.speeds[tech] > 0 && activeSpeeds.has(tech)) {
+                        playerData.speeds[tech] = Math.max(0, playerData.speeds[tech] - daysPassed);
+                        speedsUpdated = true;
+                    }
+                }
+
+                if (speedsUpdated) {
+                    saveGame();
+                    if (currentScreen === 'company') renderCompanyScreen();
+                }
+            }
         }
 
         function acceptRequest(reqId, isByBot = false) {
@@ -661,6 +691,15 @@
             const tariff = playerData.tariffs.find(t => t.id === req.tariffId);
 
             if (!tariff) {
+                playerData.requests.splice(reqIdx, 1);
+                renderRequestsScreen();
+                return;
+            }
+
+            if (playerData.speeds[tariff.speed] <= 0) {
+                if (!isByBot) {
+                    showToast(`Истекла лицензия на скорость ${tariff.speed}!`);
+                }
                 playerData.requests.splice(reqIdx, 1);
                 renderRequestsScreen();
                 return;
@@ -686,8 +725,10 @@
                 id: req.id,
                 name: req.name + (isByBot ? " (Бот)" : ""),
                 phone: req.phone,
+                tariffId: tariff.id,
                 tariffName: tariff.name,
                 tariffPrice: tariff.price,
+                speed: tariff.speed,
                 startTime: Date.now(),
                 endTime: Date.now() + durationMs,
                 totalDuration: durationMs
